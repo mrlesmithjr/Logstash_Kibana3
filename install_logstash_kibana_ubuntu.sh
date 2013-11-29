@@ -31,8 +31,10 @@ apt-get install -y --force-yes openjdk-7-jre-headless rubygems ruby1.9.1-dev lib
 
 # Install Elasticsearch
 cd /opt
-wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.20.2.deb
-dpkg -i elasticsearch-0.20.2.deb
+#wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.20.2.deb
+wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.7.deb
+#dpkg -i elasticsearch-0.20.2.deb
+dpkg -i elasticsearch-0.90.7.deb
 
 # Configuring Elasticsearch
 sed -i '$a\cluster.name: default-cluster' /etc/elasticsearch/elasticsearch.yml
