@@ -173,11 +173,11 @@ filter {
         tags => "esxi"
         rename => [ "message", "@message" ]
     }
- dns {
-      reverse => [ "host" ]
-      action => [ "replace" ]
-      add_tag => [ "dns" ]
-    }
+# dns {
+#      reverse => [ "host" ]
+#      action => [ "replace" ]
+#      add_tag => [ "dns" ]
+#    }
 }
 
 output {
