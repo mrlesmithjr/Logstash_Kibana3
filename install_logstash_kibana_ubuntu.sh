@@ -6,20 +6,20 @@
 set -e
 
 # Setting colors for output
-red='\e[0;31m'
-yellow='\e[1;33m'
-NC='\e[0m' # No Color
+red="$(tput setaf 1)"
+yellow="$(tput bold ; tput setaf 3)"
+NC="$(tput sgr0)"
 
 # Capture your FQDN Domain Name and IP Address
-echo -e "${yellow}Capturing your domain name${NC}"
+echo "${yellow}Capturing your domain name${NC}"
 yourdomainname=$(dnsdomainname)
-echo -e "${yellow}Capturing your FQDN${NC}"
+echo "${yellow}Capturing your FQDN${NC}"
 yourfqdn=$(hostname -f)
-echo -e "${yellow}Detecting IP Address${NC}"
+echo "${yellow}Detecting IP Address${NC}"
 IPADDY="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-echo -e "Your domain name is currently ${red}$yourdomainname${NC}"
-echo -e "Your FQDN is currently ${red}$yourfqdn${NC}"
-echo -e "Detected IP Address is ${red}$IPADDY${NC}"
+echo "Your domain name is currently ${red}$yourdomainname${NC}"
+echo "Your FQDN is currently ${red}$yourfqdn${NC}"
+echo "Detected IP Address is ${red}$IPADDY${NC}"
 
 # Disable CD Sources in /etc/apt/sources.list
 echo "Disabling CD Sources and Updating Apt Packages and Installing Pre-Reqs"
@@ -132,6 +132,16 @@ chmod +x /etc/init.d/logstash
 # Enable logstash start on bootup
 update-rc.d logstash defaults
 
+#echo "Setting up logstash for ESXi host filtering"
+#echo "ESXi host naming convention: (example:esxi|esx|other - Only enter common naming)"
+#echo "(example - esxi01,esxi02, etc. - Only enter esxi)"
+#echo -n "Enter ESXi host naming convention"
+#read esxinaming
+#echo "Your domain name:"
+#echo "(example - yourcompany.com)"
+#echo -n "Enter your domain name:"
+#read yourdomainname
+
 # Create Logstash configuration file
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
@@ -145,7 +155,7 @@ input {
 filter {
     grep {
         type => "syslog"
-        match => [ "message", ".*?(esxi).*?($yourdomainname).*?" ]
+        match => [ "message", ".*?(esx).*?($yourdomainname).*?" ]
         add_tag => "esxi"
         drop => "false"
     }
