@@ -1,9 +1,9 @@
-#!/bin/bash
-set -e
+#! /bin/bash
 
-cd ~
-apt-get update
-apt-get install -y --force-yes openjdk-7-jre-headless rubygems ruby1.9.1-dev libcurl4-openssl-dev git apache2
+#Provided by @mrlesmithjr
+#EveryThingShouldBeVirtual.com
+
+set -e
 
 # Setting colors for output
 red='\e[0;31m'
@@ -21,11 +21,20 @@ echo -e "Your domain name is currently ${red}$yourdomainname${NC}"
 echo -e "Your FQDN is currently ${red}$yourfqdn${NC}"
 echo -e "Detected IP Address is ${red}$IPADDY${NC}"
 
+# Disable CD Sources in /etc/apt/sources.list
+echo "Disabling CD Sources and Updating Apt Packages and Installing Pre-Reqs"
+sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
+apt-get -qq update
+
+# Install Pre-Reqs
+apt-get install -y --force-yes openjdk-7-jre-headless rubygems ruby1.9.1-dev libcurl4-openssl-dev git apache2
+
 # Install Elasticsearch
 cd /opt
 wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.20.2.deb
 dpkg -i elasticsearch-0.20.2.deb
 
+# Configuring Elasticsearch
 sed -i '$a\cluster.name: default-cluster' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\node.name: "elastic-master"' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\discovery.zen.ping.multicast.enabled: false' /etc/elasticsearch/elasticsearch.yml
@@ -35,6 +44,8 @@ sed -i '$a\node.data: true' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\index.number_of_shards: 1' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\index.number_of_replicas: 0' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\bootstrap.mlockall: true' /etc/elasticsearch/elasticsearch.yml
+
+# Restart Elasticsearch service
 service elasticsearch restart
 
 # Install Logstash 
@@ -114,7 +125,11 @@ esac
 exit 0
 EOF
 ) | tee /etc/init.d/logstash
+
+# Make logstash executable
 chmod +x /etc/init.d/logstash
+
+# Enable logstash start on bootup
 update-rc.d logstash defaults
 
 # Create Logstash configuration file
@@ -159,6 +174,7 @@ output {
 }
 EOF
 
+# Restart logstash service
 service logstash restart
 
 # Install and configure the Kibana frontend
