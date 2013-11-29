@@ -5,6 +5,22 @@ cd ~
 apt-get update
 apt-get install -y --force-yes openjdk-7-jre-headless rubygems ruby1.9.1-dev libcurl4-openssl-dev git apache2
 
+# Setting colors for output
+red='\e[0;31m'
+yellow='\e[1;33m'
+NC='\e[0m' # No Color
+
+# Capture your FQDN Domain Name and IP Address
+echo -e "${yellow}Capturing your domain name${NC}"
+yourdomainname=$(dnsdomainname)
+echo -e "${yellow}Capturing your FQDN${NC}"
+yourfqdn=$(hostname -f)
+echo -e "${yellow}Detecting IP Address${NC}"
+IPADDY="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+echo -e "Your domain name is currently ${red}$yourdomainname${NC}"
+echo -e "Your FQDN is currently ${red}$yourfqdn${NC}"
+echo -e "Detected IP Address is ${red}$IPADDY${NC}"
+
 # Install Elasticsearch
 cd /opt
 wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.20.2.deb
@@ -105,17 +121,41 @@ update-rc.d logstash defaults
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
 input {
-udp {
-type => "syslog"
-port => "514"
+ udp {
+  type => "syslog"
+  port => "514"
+ }
 }
+
+filter {
+    grep {
+        type => "syslog"
+        match => [ "message", ".*?(esxi).*?($yourdomainname).*?" ]
+        add_tag => "esxi"
+        drop => "false"
+    }
+    grok {
+        type => "syslog"
+        tags => "esxi"
+        pattern => ['(?:%{SYSLOGTIMESTAMP:timestamp}|%{TIMESTAMP_ISO8601:timestamp8601}) (?:.* (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}|(?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}): (?:(?:\[[0-9A-Z]{8,8}) (?:%{GREEDYDATA:esxi_loglevel}) \'(?:%{GREEDYDATA:esxi_service})\'] (?:%{GREEDYDATA:message})|(?:%{GREEDYDATA:message}))']
+    }
+    mutate {
+        type => "syslog"
+        tags => "esxi"
+        rename => [ "message", "@message" ]
+    }
+ dns {
+      reverse => [ "host" ]
+      action => [ "replace" ]
+      add_tag => [ "dns" ]
+    }
 }
 
 output {
-elasticsearch_http {
-host => "127.0.0.1"
-flush_size => 1
-}
+ elasticsearch_http {
+ host => "127.0.0.1"
+ flush_size => 1
+ }
 }
 EOF
 
@@ -128,4 +168,4 @@ tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
 
-echo "Connect to http://hostname|ip/kibana"
+echo -e "Connect to ${red}http://$yourfqdn/kibana${NC} or ${red}http://$IPADDY/kibana${NC}"
