@@ -205,4 +205,9 @@ tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
 
+# All Done
+echo "Installation has completed!!"
 echo -e "Connect to ${red}http://$yourfqdn/kibana${NC} or ${red}http://$IPADDY/kibana${NC}"
+echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
+echo "${yellow}@mrlesmithjr${NC}"
+echo "${yellow}Enjoy!!!${NC}"
