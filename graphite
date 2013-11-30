@@ -1,3 +1,11 @@
+#! /bin/bash
+
+#Provided by @mrlesmithjr
+#EveryThingShouldBeVirtual.com
+
+set -e
+
+# Download Graphite, Carbon and Whisper
 cd /opt
 wget https://launchpad.net/graphite/0.9/0.9.10/+download/graphite-web-0.9.10.tar.gz
 wget https://launchpad.net/graphite/0.9/0.9.10/+download/carbon-0.9.10.tar.gz
@@ -11,23 +19,23 @@ mv carbon—0.9.10 carbon
 rm graphite-web-0.9.10.tar.gz
 rm carbon-0.9.10.tar.gz
 rm whisper-0.9.10.tar.gz
+
+# Install Dependencies
 apt-get install --assume-yes apache2 apache2-mpm-worker apache2-utils apache2.2-bin apache2.2-common libapr1 libaprutil1 libaprutil1-dbd-sqlite3 build-essential python3.2 python-dev libpython3.2 python3-minimal libapache2-mod-wsgi libaprutil1-ldap memcached python-cairo-dev python-django python-ldap python-memcache python-pysqlite2 sqlite3 erlang-os-mon erlang-snmp rabbitmq-server bzr expect ssh libapache2-mod-python python-setuptools
 
+# Install PIP Dependencies
 easy_install django-tagging
 easy_install zope.interface
 easy_install twisted==12.2.0
 easy_install daemonize
 
-# INSTALL WHISPER
-
+# Install Whisper
 cd /opt/whisper
 python setup.py install
 
-# INSTALL CARBON
-
+# Install Carbon
 cd /opt/carbon
 python setup.py install
-
 cd /opt/graphite/conf
 cp carbon.conf.example carbon.conf
 
@@ -39,14 +47,12 @@ pattern = .*
 retentions = 10:2160,60:10080,600:262974
 EOF
 
-# CONFIGURE GRAPHITE (webapp)
-
+# Configure Graphite (webapp)
 cd /opt/graphite
 python check-dependencies.py
 python setup.py install
 
-# CONFIGURE APACHE to run Graphite on port 8080
-
+# Configure Apache to run Graphite on port 8080
 cd /opt/graphite/examples
 cp example-graphite-vhost.conf /etc/apache2/sites-available/graphite-vhost.conf
 sed -i -e 's|*:80>|*:8080>|' /etc/apache2/sites-available/graphite-vhost.conf
@@ -67,11 +73,8 @@ service apache2 restart
 cd /opt/graphite/webapp/graphite
 cp local_settings.py.example local_settings.py
 
-# START CARBON
-
+# Start Carbon
 #fix issue with demonize
 #sed -i -e’s|from twisted.scripts._twistd_unix import daemonize|import daemonize|’ /opt/graphite/lib/carbon/util.py
-
 cd /opt/graphite/
 ./bin/carbon-cache.py start
-
