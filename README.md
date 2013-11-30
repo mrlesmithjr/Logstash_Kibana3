@@ -7,3 +7,6 @@ Install instructions.
 git clone https://github.com/mrlesmithjr/Logstash_Kibana3
 chmod +x ./Logstash_Kibana3/install_logstash_kibana_ubuntu.sh
 sudo ./Logstash_Kibana3/install_logstash_kibana_ubuntu.sh
+
+Configure (r)syslog clients to send on udp/514
+Configure ESX(i) clients to send on tcp/514
