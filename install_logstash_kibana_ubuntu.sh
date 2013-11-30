@@ -188,6 +188,9 @@ output {
 }
 EOF
 
+# Create grok pattern folder
+mkdir -p /usr/share/grok/patterns
+
 # Restart logstash service
 service logstash restart
 
