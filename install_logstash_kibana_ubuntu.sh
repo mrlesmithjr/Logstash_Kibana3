@@ -164,7 +164,7 @@ input {
 filter {
     grep {
         type => "esxi_syslog"
-        match => [ "message", ".*?($esxinaming).*?($yourdomainname).*?" ]
+        match => [ "message", ".*?(esxi).*?(internal.elretardoland.com).*?" ]
         add_tag => "esxi"
         drop => "false"
     }
@@ -181,28 +181,30 @@ filter {
 }
 
 filter {
-  if [type] == "syslog" {
-    grok {
-      match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+  grok {
+      type => "syslog"
+      pattern => [ "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
       add_field => [ "received_at", "%{@timestamp}" ]
       add_field => [ "received_from", "%{@source_host}" ]
-    }
-    syslog_pri { }
-    date {
-      match => { "syslog_timestamp" => [ "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ] }
-    }
-    if !("_grokparsefailure" in [tags]) {
-      mutate {
-        replace => [ "@source_host", "%{syslog_hostname}" ]
-        replace => [ "@message", "%{syslog_message}" ]
-      }
-    }
-    mutate {
-      remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
-    }
+  }
+  syslog_pri {
+      type => "syslog"
+  }
+  date {
+      type => "syslog"
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+  }
+  mutate {
+      type => "syslog"
+      exclude_tags => "_grokparsefailure"
+      replace => [ "@source_host", "%{syslog_hostname}" ]
+      replace => [ "@message", "%{syslog_message}" ]
+  }
+  mutate {
+      type => "syslog"
+      remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
   }
 }
-
 # dns {
 #      reverse => [ "host" ]
 #      action => [ "replace" ]
