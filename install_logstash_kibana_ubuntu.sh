@@ -78,6 +78,7 @@ logstash_bin="/usr/bin/java -- -jar /opt/logstash/logstash.jar"
 logstash_conf="/etc/logstash/logstash.conf"
 logstash_log="/var/log/logstash.log"
 pid_file="/var/run/$name.pid"
+patterns_path="/etc/logstash/patterns"
  
 start () {
         command="${logstash_bin} agent -f $logstash_conf --log ${logstash_log}"
@@ -189,7 +190,11 @@ output {
 EOF
 
 # Create grok pattern folder
-mkdir -p /usr/share/grok/patterns
+mkdir -p /etc/logstash/patterns
+cd /tmp
+git clone https://github.com/logstash/logstash
+cp /tmp/logstash/patterns/* /etc/logstash/patterns/
+cd /etc/logstash/patterns
 
 # Restart logstash service
 service logstash restart
