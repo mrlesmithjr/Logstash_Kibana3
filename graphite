@@ -1,0 +1,77 @@
+cd /opt
+wget https://launchpad.net/graphite/0.9/0.9.10/+download/graphite-web-0.9.10.tar.gz
+wget https://launchpad.net/graphite/0.9/0.9.10/+download/carbon-0.9.10.tar.gz
+wget https://launchpad.net/graphite/0.9/0.9.10/+download/whisper-0.9.10.tar.gz
+tar -zxvf graphite-web-0.9.10.tar.gz
+tar -zxvf carbon-0.9.10.tar.gz
+tar -zxvf whisper-0.9.10.tar.gz
+mv graphite-web-0.9.10 graphite
+mv whisper-0.9.10 whisper
+mv carbon—0.9.10 carbon
+rm graphite-web-0.9.10.tar.gz
+rm carbon-0.9.10.tar.gz
+rm whisper-0.9.10.tar.gz
+apt-get install --assume-yes apache2 apache2-mpm-worker apache2-utils apache2.2-bin apache2.2-common libapr1 libaprutil1 libaprutil1-dbd-sqlite3 build-essential python3.2 python-dev libpython3.2 python3-minimal libapache2-mod-wsgi libaprutil1-ldap memcached python-cairo-dev python-django python-ldap python-memcache python-pysqlite2 sqlite3 erlang-os-mon erlang-snmp rabbitmq-server bzr expect ssh libapache2-mod-python python-setuptools
+
+easy_install django-tagging
+easy_install zope.interface
+easy_install twisted==12.2.0
+easy_install daemonize
+
+# INSTALL WHISPER
+
+cd /opt/whisper
+python setup.py install
+
+# INSTALL CARBON
+
+cd /opt/carbon
+python setup.py install
+
+cd /opt/graphite/conf
+cp carbon.conf.example carbon.conf
+
+# create storage-schemas.conf
+tee -a /opt/graphite/conf/storage-schemas.conf <<EOF
+[stats]
+priority = 110
+pattern = .*
+retentions = 10:2160,60:10080,600:262974
+EOF
+
+# CONFIGURE GRAPHITE (webapp)
+
+cd /opt/graphite
+python check-dependencies.py
+python setup.py install
+
+# CONFIGURE APACHE to run Graphite on port 8080
+
+cd /opt/graphite/examples
+cp example-graphite-vhost.conf /etc/apache2/sites-available/graphite-vhost.conf
+sed -i -e 's|*:80>|*:8080>|' /etc/apache2/sites-available/graphite-vhost.conf
+cp /opt/graphite/conf/graphite.wsgi.example /opt/graphite/conf/graphite.wsgi
+mkdir -p /etc/httpd/wsgi
+sed -i -e "s|WSGISocketPrefix run/wsgi|WSGISocketPrefix /etc/httpd/wsgi|" /etc/apache2/sites-available/graphite-vhost.conf
+a2ensite graphite-vhost.conf
+echo NameVirtualHost *:8080| tee -a /etc/apache2/ports.conf
+echo Listen 8080| tee -a /etc/apache2/ports.conf
+service apache2 reload
+
+# INITIAL DATABASE CREATION
+cd /opt/graphite/webapp/graphite/
+sudo python manage.py syncdb
+# follow prompts to setup django admin user
+chown -R www-data:www-data /opt/graphite/storage/
+service apache2 restart
+cd /opt/graphite/webapp/graphite
+cp local_settings.py.example local_settings.py
+
+# START CARBON
+
+#fix issue with demonize
+#sed -i -e’s|from twisted.scripts._twistd_unix import daemonize|import daemonize|’ /opt/graphite/lib/carbon/util.py
+
+cd /opt/graphite/
+./bin/carbon-cache.py start
+
