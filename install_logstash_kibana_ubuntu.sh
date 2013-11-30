@@ -155,31 +155,59 @@ input {
   type => "syslog"
   port => "514"
  }
+ tcp {
+  type => "esxi_syslog"
+  port => "514"
+ }
 }
 
 filter {
     grep {
-        type => "syslog"
+        type => "esxi_syslog"
         match => [ "message", ".*?($esxinaming).*?($yourdomainname).*?" ]
         add_tag => "esxi"
         drop => "false"
     }
     grok {
-        type => "syslog"
+        type => "esxi_syslog"
         tags => "esxi"
         pattern => ['(?:%{SYSLOGTIMESTAMP:timestamp}|%{TIMESTAMP_ISO8601:timestamp8601}) (?:.* (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}|(?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}): (?:(?:\[[0-9A-Z]{8,8}) (?:%{GREEDYDATA:esxi_loglevel}) \'(?:%{GREEDYDATA:esxi_service})\'] (?:%{GREEDYDATA:message})|(?:%{GREEDYDATA:message}))']
     }
     mutate {
-        type => "syslog"
+        type => "esxi_syslog"
         tags => "esxi"
         rename => [ "message", "@message" ]
     }
+}
+
+filter {
+  if [type] == "syslog" {
+    grok {
+      match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+      add_field => [ "received_from", "%{@source_host}" ]
+    }
+    syslog_pri { }
+    date {
+      match => { "syslog_timestamp" => [ "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ] }
+    }
+    if !("_grokparsefailure" in [tags]) {
+      mutate {
+        replace => [ "@source_host", "%{syslog_hostname}" ]
+        replace => [ "@message", "%{syslog_message}" ]
+      }
+    }
+    mutate {
+      remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
+    }
+  }
+}
+
 # dns {
 #      reverse => [ "host" ]
 #      action => [ "replace" ]
 #      add_tag => [ "dns" ]
 #    }
-}
 
 output {
  elasticsearch_http {
