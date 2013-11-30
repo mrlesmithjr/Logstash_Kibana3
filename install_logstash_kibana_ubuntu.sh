@@ -194,7 +194,6 @@ mkdir -p /etc/logstash/patterns
 cd /tmp
 git clone https://github.com/logstash/logstash
 cp /tmp/logstash/patterns/* /etc/logstash/patterns/
-cd /etc/logstash/patterns
 
 # Restart logstash service
 service logstash restart
