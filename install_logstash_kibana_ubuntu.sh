@@ -164,7 +164,7 @@ input {
 filter {
     grep {
         type => "esxi_syslog"
-        match => [ "message", ".*?(esxi).*?(internal.elretardoland.com).*?" ]
+        match => [ "message", ".*?($esxinaming).*?($yourdomainname).*?" ]
         add_tag => "esxi"
         drop => "false"
     }
