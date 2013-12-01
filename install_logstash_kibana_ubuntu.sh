@@ -183,7 +183,8 @@ filter {
 filter {
   grok {
       type => "syslog"
-      pattern => [ "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
+#     pattern => [ "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
+      pattern => [ "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} (%{SYSLOGHOST:syslog_hostname})? %{GREEDYDATA:syslog_message}" ]
       add_field => [ "received_at", "%{@timestamp}" ]
       add_field => [ "received_from", "%{@source_host}" ]
   }
@@ -202,7 +203,8 @@ filter {
   }
   mutate {
       type => "syslog"
-      remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
+#      remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
+      remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
   }
 }
 # dns {
@@ -228,7 +230,15 @@ cp /tmp/logstash/patterns/* /etc/logstash/patterns/
 # Restart logstash service
 service logstash restart
 
-# Install and configure the Kibana frontend
+# Install and configure Kibana2 frontend
+cd /opt
+git clone --branch=kibana-ruby https://github.com/rashidkpc/Kibana.git
+mv Kibana Kibana2
+cd /opt/Kibana2
+sed -i -e "s|KibanaHost = '127.0.0.1'|KibanaHost = '0.0.0.0'|" KibanaConfig.rb
+# ruby kibana.rb &
+
+# Install and configure Kibana3 frontend
 cd /var/www
 wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.0milestone4.tar.gz
 tar zxvf kibana-*
