@@ -29,6 +29,12 @@ apt-get -qq update
 # Install Pre-Reqs
 apt-get install -y --force-yes openjdk-7-jre-headless rubygems ruby1.9.1-dev libcurl4-openssl-dev git apache2
 
+# Install Redis-Server
+apt-get -y install redis-server
+# Configure Redis-Server to listen on all interfaces
+sed -i -e 's|bind 127.0.0.1|bind 0.0.0.0|' /etc/redis/redis.conf
+service redis-server restart
+
 # Install Elasticsearch
 cd /opt
 #wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.20.2.deb
