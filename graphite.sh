@@ -5,6 +5,17 @@
 
 set -e
 
+# Setting colors for output
+red="$(tput setaf 1)"
+yellow="$(tput bold ; tput setaf 3)"
+NC="$(tput sgr0)"
+echo "${yellow}Capturing your FQDN${NC}"
+yourfqdn=$(hostname -f)
+echo "${yellow}Detecting IP Address${NC}"
+IPADDY="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+echo "Detected IP Address is ${red}$IPADDY${NC}"
+
+
 # Download Graphite, Carbon and Whisper
 cd /opt
 wget https://launchpad.net/graphite/0.9/0.9.10/+download/graphite-web-0.9.10.tar.gz
@@ -21,6 +32,7 @@ mv whisper-0.9.10 whisper
 mv carbon-0.9.10 carbon
 
 # Install Dependencies
+apt-get update
 apt-get install --assume-yes apache2 apache2-mpm-worker apache2-utils apache2.2-bin apache2.2-common libapr1 libaprutil1 libaprutil1-dbd-sqlite3 build-essential python3.2 python-dev libpython3.2 python3-minimal libapache2-mod-wsgi libaprutil1-ldap memcached python-cairo-dev python-django python-ldap python-memcache python-pysqlite2 sqlite3 erlang-os-mon erlang-snmp rabbitmq-server bzr expect ssh libapache2-mod-python python-setuptools
 
 # Install PIP Dependencies
@@ -78,3 +90,10 @@ cp local_settings.py.example local_settings.py
 #sed -i -e’s|from twisted.scripts._twistd_unix import daemonize|import daemonize|’ /opt/graphite/lib/carbon/util.py
 cd /opt/graphite/
 ./bin/carbon-cache.py start
+
+# All Done
+echo "Installation has completed!!"
+echo -e "Connect to ${red}http://$yourfqdn:8080{NC} or ${red}http://$IPADDY:8080{NC}"
+echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
+echo "${yellow}@mrlesmithjr${NC}"
+echo "${yellow}Enjoy!!!${NC}"
