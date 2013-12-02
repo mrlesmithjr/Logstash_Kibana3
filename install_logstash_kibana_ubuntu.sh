@@ -189,13 +189,9 @@ filter {
 filter {
   grok {
       type => "syslog"
-#     pattern => [ "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
-      pattern => [ "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} (%{SYSLOGHOST:syslog_hostname})? %{GREEDYDATA:syslog_message}" ]
+      pattern => [ "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
       add_field => [ "received_at", "%{@timestamp}" ]
       add_field => [ "received_from", "%{@source_host}" ]
-  }
-  syslog_pri {
-      type => "syslog"
   }
   date {
       type => "syslog"
@@ -209,15 +205,9 @@ filter {
   }
   mutate {
       type => "syslog"
-#      remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
       remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
   }
 }
-# dns {
-#      reverse => [ "host" ]
-#      action => [ "replace" ]
-#      add_tag => [ "dns" ]
-#    }
 
 output {
  elasticsearch_http {
