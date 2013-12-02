@@ -13,12 +13,12 @@ wget https://launchpad.net/graphite/0.9/0.9.10/+download/whisper-0.9.10.tar.gz
 tar -zxvf graphite-web-0.9.10.tar.gz
 tar -zxvf carbon-0.9.10.tar.gz
 tar -zxvf whisper-0.9.10.tar.gz
-mv graphite-web-0.9.10/ graphite
-mv whisper-0.9.10/ whisper
-mv carbon—0.9.10/ carbon
 rm graphite-web-0.9.10.tar.gz
 rm carbon-0.9.10.tar.gz
 rm whisper-0.9.10.tar.gz
+mv graphite-web-0.9.10 graphite
+mv whisper-0.9.10 whisper
+mv carbon-0.9.10 carbon
 
 # Install Dependencies
 apt-get install --assume-yes apache2 apache2-mpm-worker apache2-utils apache2.2-bin apache2.2-common libapr1 libaprutil1 libaprutil1-dbd-sqlite3 build-essential python3.2 python-dev libpython3.2 python3-minimal libapache2-mod-wsgi libaprutil1-ldap memcached python-cairo-dev python-django python-ldap python-memcache python-pysqlite2 sqlite3 erlang-os-mon erlang-snmp rabbitmq-server bzr expect ssh libapache2-mod-python python-setuptools
