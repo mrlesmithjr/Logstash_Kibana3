@@ -42,7 +42,7 @@ cp carbon.conf.example carbon.conf
 # create storage-schemas.conf
 tee -a /opt/graphite/conf/storage-schemas.conf <<EOF
 [stats]
-priority = 110
+priority = 100
 pattern = .*
 retentions = 1m:395d
 EOF
