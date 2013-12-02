@@ -13,9 +13,9 @@ wget https://launchpad.net/graphite/0.9/0.9.10/+download/whisper-0.9.10.tar.gz
 tar -zxvf graphite-web-0.9.10.tar.gz
 tar -zxvf carbon-0.9.10.tar.gz
 tar -zxvf whisper-0.9.10.tar.gz
-mv graphite-web-0.9.10 graphite
-mv whisper-0.9.10 whisper
-mv carbon—0.9.10 carbon
+mv graphite-web-0.9.10/ graphite
+mv whisper-0.9.10/ whisper
+mv carbon—0.9.10/ carbon
 rm graphite-web-0.9.10.tar.gz
 rm carbon-0.9.10.tar.gz
 rm whisper-0.9.10.tar.gz
