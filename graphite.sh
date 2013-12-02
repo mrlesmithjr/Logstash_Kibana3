@@ -21,9 +21,7 @@ cd /opt
 wget https://launchpad.net/graphite/0.9/0.9.10/+download/graphite-web-0.9.10.tar.gz
 wget https://launchpad.net/graphite/0.9/0.9.10/+download/carbon-0.9.10.tar.gz
 wget https://launchpad.net/graphite/0.9/0.9.10/+download/whisper-0.9.10.tar.gz
-tar -zxvf graphite-web-0.9.10.tar.gz
-tar -zxvf carbon-0.9.10.tar.gz
-tar -zxvf whisper-0.9.10.tar.gz
+find *.tar.gz -exec tar -zxvf '{}' \;
 rm graphite-web-0.9.10.tar.gz
 rm carbon-0.9.10.tar.gz
 rm whisper-0.9.10.tar.gz
