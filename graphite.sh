@@ -51,10 +51,10 @@ cp carbon.conf.example carbon.conf
 
 # create storage-schemas.conf
 tee -a /opt/graphite/conf/storage-schemas.conf <<EOF
-[everything_1min_13months]
-priority = 100
+[stats]
+priority = 110
 pattern = .*
-retentions = 1m:395d
+retentions = 10:2160,60:10080,600:262974
 EOF
 
 # Configure Graphite (webapp)
