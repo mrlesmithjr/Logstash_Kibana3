@@ -80,6 +80,7 @@ service apache2 reload
 cd /opt/graphite/webapp/graphite/
 sudo python manage.py syncdb
 # follow prompts to setup django admin user
+mkdir -p /opt/graphite/storage/log/webapp
 chown -R www-data:www-data /opt/graphite/storage/
 service apache2 restart
 cd /opt/graphite/webapp/graphite
