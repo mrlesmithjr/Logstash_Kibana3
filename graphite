@@ -44,7 +44,7 @@ tee -a /opt/graphite/conf/storage-schemas.conf <<EOF
 [stats]
 priority = 110
 pattern = .*
-retentions = 10:2160,60:10080,600:262974
+retentions = 1m:395d
 EOF
 
 # Configure Graphite (webapp)
