@@ -13,7 +13,7 @@ yellow="$(tput bold ; tput setaf 3)"
 NC="$(tput sgr0)"
 
 # Install dependencies
-apt-get install --yes flex bison libperl-dev python-dev libdbi-dev libyajl-dev libxml2-dev libmysqlclient-dev iptables-dev git make build-essential automake libtool pkg-config libgcrypt11-dev curl libesmtp-dev liboping-dev libpcap0.8-dev libcurl4-gnutls-dev librrd2-dev libsensors-dev libsnmp-dev
+apt-get install --yes flex bison libperl-dev python-dev libdbi-dev libyajl-dev libxml2-dev libmysqlclient-dev iptables-dev git make build-essential automake libtool pkg-config libgcrypt11-dev curl libesmtp-dev liboping-dev libpcap0.8-dev libcurl4-gnutls-dev librrd-dev libsensors4-dev libsnmp-dev
 
 # Download, build and install collectd
 cd /opt
