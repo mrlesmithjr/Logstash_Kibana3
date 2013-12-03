@@ -98,6 +98,7 @@ Hostname "$(hostname)"
 Interval 10
 ReadThreads 5
  
+LoadPlugin disk
 LoadPlugin syslog
 LoadPlugin logfile
 LoadPlugin cpu
@@ -106,6 +107,12 @@ LoadPlugin load
 LoadPlugin memory
 LoadPlugin write_graphite
  
+<Plugin "disk">
+  Disk "/^sd/"
+  Disk "/^hd/"
+  IgnoreSelected false
+</Plugin>
+
 <Plugin write_graphite>
 <Carbon>
 Host "$carbonserver"
