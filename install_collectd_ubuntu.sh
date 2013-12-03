@@ -24,8 +24,7 @@ mv collectd*/ collectd
 #git clone https://github.com/collectd/collectd
 cd collectd
 ./configure --enable-curl --enable-curl_json --enable-curl_xml --enable-dbi --enable-python --enable-mysql --enable-smtp --enable-ping
-make
-make install
+make all install
 
 # All Done
 echo "Installation has completed!!"
