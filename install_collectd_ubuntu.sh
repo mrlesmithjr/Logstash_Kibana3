@@ -27,6 +27,7 @@ cd collectd
 make all install
 
 # Create /etc/init.d/collectd startup script
+ln -s /usr/lib/insserv/insserv /sbin/insserv
 tee -a /etc/init.d/collectd <<EOF
 #! /bin/bash
 #
