@@ -26,7 +26,7 @@ cd collectd
 ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib --mandir=/usr/share/man --enable-curl --enable-curl_json --enable-curl_xml --enable-dbi --enable-python --enable-mysql --enable-smtp --enable-ping
 make all install
 
-# Create /etc/init.d/collectd startup script
+# Create /etc/init/collectd startup script
 (
 cat <<'EOF'
 description "start/stop/control collectd"
