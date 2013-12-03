@@ -110,6 +110,7 @@ LoadPlugin write_graphite
 <Carbon>
 Host "$carbonserver"
 Port "2003"
+Protocol "tcp"
 Prefix ""
 Postfix ""
 SeparateInstances true
