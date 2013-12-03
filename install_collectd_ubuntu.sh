@@ -23,7 +23,7 @@ rm collectd-5.4.0.tar.gz
 mv collectd*/ collectd
 #git clone https://github.com/collectd/collectd
 cd collectd
-./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib --mandir=/usr/share/man --enable-all-plugins
+./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib --mandir=/usr/share/man --enable-curl --enable-curl_json --enable-curl_xml --enable-dbi --enable-python --enable-mysql --enable-smtp --enable-ping
 make all install
 
 # Create /etc/init.d/collectd startup script
