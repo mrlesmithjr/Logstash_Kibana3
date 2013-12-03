@@ -3,7 +3,7 @@
 #Provided by @mrlesmithjr
 #EveryThingShouldBeVirtual.com
 
-# This script will install collect on a Ubuntu system
+# This script will install collectd on a Ubuntu system
 
 set -e
 
@@ -17,7 +17,11 @@ apt-get install --yes flex bison libperl-dev python-dev libdbi-dev libyajl-dev l
 
 # Download, build and install collectd
 cd /opt
-git clone https://github.com/collectd/collectd
+wget http://collectd.org/files/collectd-5.4.0.tar.gz
+tar zxvf collectd-5.4.0.tar.gz
+rm collectd-5.4.0.tar.gz
+mv collectd*/ collectd
+#git clone https://github.com/collectd/collectd
 cd collectd
 ./clean.sh
 ./build.sh
