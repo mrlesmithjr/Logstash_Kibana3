@@ -92,7 +92,7 @@ cd /opt/graphite/
 
 # All Done
 echo "Installation has completed!!"
-echo -e "Connect to ${red}http://$yourfqdn:8080{NC} or ${red}http://$IPADDY:8080{NC}"
+echo -e "Connect to ${red}http://$yourfqdn:8080${NC} or ${red}http://$IPADDY:8080${NC}"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
 echo "${yellow}Enjoy!!!${NC}"
