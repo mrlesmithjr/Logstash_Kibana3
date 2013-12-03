@@ -23,8 +23,6 @@ rm collectd-5.4.0.tar.gz
 mv collectd*/ collectd
 #git clone https://github.com/collectd/collectd
 cd collectd
-./clean.sh
-./build.sh
 ./configure --enable-curl --enable-curl_json --enable-curl_xml --enable-dbi --enable-python --enable-mysql --enable-smtp --enable-ping
 make
 make install
