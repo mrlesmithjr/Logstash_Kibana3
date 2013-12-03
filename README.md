@@ -31,3 +31,8 @@ You can use the collectd installer to install on any server that you want to sen
 Install instructions.
 chmod +x ./Logstash_Kibana3/install_collectd_ubuntu.sh
 sudo ./Logstash_Kibana3/install_collectd_ubuntu.sh
+
+Visit Me
+--------
+http://everythingshouldbevirtual.com
+@mrlesmithjr
