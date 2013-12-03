@@ -17,9 +17,8 @@ apt-get install --yes flex bison libperl-dev python-dev libdbi-dev libyajl-dev l
 
 # Download, build and install collectd
 cd /opt
-git clone git://github.com/collectd/collectd.git
+git clone https://github.com/collectd/collectd
 cd collectd
-git co 5.2.x
 ./clean.sh
 ./build.sh
 ./configure --enable-curl --enable-curl_json --enable-curl_xml --enable-dbi --enable-python --enable-mysql --enable-smtp --enable-ping
