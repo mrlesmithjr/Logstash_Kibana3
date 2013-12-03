@@ -126,7 +126,6 @@ SeparateInstances true
 EOF
 
 # Restart collectd
-sudo initctl stop collectd
 sudo initctl start collectd
 
 # All Done
