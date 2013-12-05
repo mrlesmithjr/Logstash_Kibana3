@@ -84,11 +84,32 @@ service apache2 restart
 cd /opt/graphite/webapp/graphite
 cp local_settings.py.example local_settings.py
 
+# Create /etc/init/carbon-cache.conf
+(
+cat <<'EOF'
+description "Daemonized Carbon-Cache"
+
+start on runlevel [2345]
+stop on runlevel [016]
+
+#setuid www-data
+#setgid www-data
+
+exec /opt/graphite/bin/carbon-cache.py start
+
+respawn
+respawn limit 10 5
+EOF
+) | tee -a /etc/init/carbon-cache.conf
+
+initctl reload-configuration
+
 # Start Carbon
 #fix issue with demonize
 #sed -i -e’s|from twisted.scripts._twistd_unix import daemonize|import daemonize|’ /opt/graphite/lib/carbon/util.py
-cd /opt/graphite/
-./bin/carbon-cache.py start
+#cd /opt/graphite/
+#./bin/carbon-cache.py start
+initctl start carbon-cache
 
 # All Done
 echo "Installation has completed!!"
