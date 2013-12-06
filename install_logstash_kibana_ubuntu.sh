@@ -177,13 +177,24 @@ filter {
     grok {
         type => "esxi_syslog"
         tags => "esxi"
-        pattern => ['(?:%{SYSLOGTIMESTAMP:timestamp}|%{TIMESTAMP_ISO8601:timestamp8601}) (?:.* (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}|(?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{SYSLOGPROG}): (?:(?:\[[0-9A-Z]{8,8}) (?:%{GREEDYDATA:esxi_loglevel}) \'(?:%{GREEDYDATA:esxi_service})\'] (?:%{GREEDYDATA:message})|(?:%{GREEDYDATA:message}))']
+        pattern => [ "%{TIMESTAMP_ISO8601:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:syslog_message}" ]
+        add_field => [ "received_at", "%{@timestamp}" ]
+        add_field => [ "received_from", "%{@source_host}" ]
+    }
+    date {
+        type => "esxi_syslog"
+        match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
     }
     mutate {
         type => "esxi_syslog"
         tags => "esxi"
-        rename => [ "message", "@message" ]
+        replace => [ "@source_host", "%{syslog_hostname}" ]
+        replace => [ "@message", "%{syslog_message}" ]
     }
+        mutate {
+        type => "esxi_syslog"
+        remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
+        }
 }
 
 filter {
