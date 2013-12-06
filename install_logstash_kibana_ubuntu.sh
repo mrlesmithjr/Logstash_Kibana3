@@ -144,12 +144,12 @@ update-rc.d logstash defaults
 echo "Setting up logstash for ESXi host filtering"
 echo "ESXi host naming convention: (example:esxi|esx|other - Only enter common naming)"
 echo "(example - esxi01,esxi02, etc. - Only enter esxi)"
-echo -n "Enter ESXi host naming convention and press enter:"
+echo -n "Enter ESXi host naming convention and press enter: "
 read esxinaming
 echo "You entered ${red}$esxinaming${NC}"
 echo "Your domain name:"
 echo "(example - yourcompany.com)"
-echo -n "Enter your domain name and press enter:"
+echo -n "Enter your domain name and press enter: "
 read yourdomainname
 echo "You entered ${red}$yourdomainname${NC}"
 
