@@ -104,7 +104,7 @@ stop () {
 }
  
 status () {
-        status_of_proc -p $pid_file "" "$name"
+        status_of_proc -p "$pid_file" "$name"
 }
  
 case $1 in
