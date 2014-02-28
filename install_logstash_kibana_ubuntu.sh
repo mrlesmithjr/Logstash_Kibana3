@@ -42,9 +42,9 @@ service redis-server restart
 # Install Elasticsearch
 cd /opt
 #wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.20.2.deb
-wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.7.deb
+wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.11.deb
 #dpkg -i elasticsearch-0.20.2.deb
-dpkg -i elasticsearch-0.90.7.deb
+dpkg -i elasticsearch-0.90.11.deb
 
 # Configuring Elasticsearch
 sed -i '$a\cluster.name: default-cluster' /etc/elasticsearch/elasticsearch.yml
