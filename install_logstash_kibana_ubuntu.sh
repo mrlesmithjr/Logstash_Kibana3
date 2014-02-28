@@ -1,9 +1,13 @@
-#! /bin/bash
+#!/bin/bash
 
 #Provided by @mrlesmithjr
 #EveryThingShouldBeVirtual.com
 
 set -e
+# Setup logging
+# Logs stderr and stdout to separate files.
+exec 2> >(tee "./Logstash_Kibana3/install_logstash_kibana_ubuntu.err")
+exec > >(tee "./Logstash_Kibana3/install_logstash_kibana_ubuntu.log")
 
 # Setting colors for output
 red="$(tput setaf 1)"
@@ -60,7 +64,8 @@ service elasticsearch restart
 mkdir /opt/logstash
 cd /opt/logstash
 #wget https://download.elasticsearch.org/logstash/logstash/logstash-1.2.2-flatjar.jar
-wget https://download.elasticsearch.org/logstash/logstash/logstash-1.3.2-flatjar.jar
+#wget https://download.elasticsearch.org/logstash/logstash/logstash-1.3.2-flatjar.jar
+wget https://download.elasticsearch.org/logstash/logstash/logstash-1.3.3-flatjar.jar
 mv logstash-*.jar logstash.jar
 
 # Create Logstash Init Script
@@ -248,7 +253,8 @@ sed -i -e "s|KibanaHost = '127.0.0.1'|KibanaHost = '0.0.0.0'|" KibanaConfig.rb
 
 # Install and configure Kibana3 frontend
 cd /var/www
-wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.0milestone4.tar.gz
+#wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.0milestone4.tar.gz
+wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.0milestone5.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
