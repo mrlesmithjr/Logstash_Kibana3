@@ -120,7 +120,7 @@ chmod +x /etc/init.d/logstash
 # Enable logstash start on bootup
 update-rc.d logstash defaults
 
-echo "Enter your redis server name or IP" "
+echo "Enter your redis server name or IP: "
 read redisserver
 
 # Create Logstash configuration file
