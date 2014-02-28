@@ -130,6 +130,7 @@ input {
   file {
     path => "/var/log/apache2/*access.log"
     type => "apache"
+    sincedb_path => "/var/log/.sincedb"
   }
 }
  
