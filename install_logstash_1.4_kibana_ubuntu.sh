@@ -245,10 +245,11 @@ wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.1.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
+ln -s /var/www/html/kibana /var/www/kibana
 
 # All Done
 echo "Installation has completed!!"
-echo -e "Connect to ${red}http://$yourfqdn/html/kibana${NC} or ${red}http://$IPADDY/html/kibana${NC}"
+echo -e "Connect to ${red}http://$yourfqdn/kibana${NC} or ${red}http://$IPADDY/kibana${NC}"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
 echo "${yellow}Enjoy!!!${NC}"

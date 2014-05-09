@@ -5,13 +5,17 @@ This script is for doing an automated install of logstash and the kibana3 front 
 
 Install instructions.
 git clone https://github.com/mrlesmithjr/Logstash_Kibana3
+
+For Logstash 1.3.x
 chmod +x ./Logstash_Kibana3/install_logstash_kibana_ubuntu.sh
 sudo ./Logstash_Kibana3/install_logstash_kibana_ubuntu.sh
 
+For Logstash 1.4.x
+chmod +x ./Logstash_Kibana3/install_logstash_1.4_kibana_ubuntu.sh
+sudo ./Logstash_Kibana3/install_logstash_1.4_kibana_ubuntu.sh
+
 Configure (r)syslog clients to send on udp/514
 Configure ESX(i) clients to send on tcp/514
-
-**Note** Kibana2 is also installed into /opt/kibana2 but is not running so you can start it up if you want to use Kibana2 instead or together with Kibana3.
 
 Visit Me
 --------
