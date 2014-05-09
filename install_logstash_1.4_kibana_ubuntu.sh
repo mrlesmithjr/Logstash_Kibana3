@@ -164,65 +164,17 @@ input {
   type => "syslog"
   port => "514"
  }
- tcp {
-  type => "esxi_syslog"
-  port => "514"
- }
 }
-
 filter {
-    grep {
-        type => "esxi_syslog"
-        match => [ "message", ".*?($esxinaming).*?($yourdomainname).*?" ]
-        add_tag => "esxi"
-        drop => "false"
-    }
-    grok {
-        type => "esxi_syslog"
-        tags => "esxi"
-        pattern => [ "%{TIMESTAMP_ISO8601:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:syslog_message}" ]
-        add_field => [ "received_at", "%{@timestamp}" ]
-        add_field => [ "received_from", "%{@source_host}" ]
-    }
-    date {
-        type => "esxi_syslog"
-        match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
-    }
-    mutate {
-        type => "esxi_syslog"
-        tags => "esxi"
-        replace => [ "@source_host", "%{syslog_hostname}" ]
-        replace => [ "@message", "%{syslog_message}" ]
-    }
-        mutate {
-        type => "esxi_syslog"
-        remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
+        if [type] == "syslog" {
+                dns {
+                reverse => [ "host" ] action => "replace"
+                }
+        if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
+                mutate { add_tag => [ "VMware" ] }
+                }
         }
 }
-
-filter {
-  grok {
-      type => "syslog"
-      pattern => [ "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
-      add_field => [ "received_at", "%{@timestamp}" ]
-      add_field => [ "received_from", "%{@source_host}" ]
-  }
-  date {
-      type => "syslog"
-      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
-  }
-  mutate {
-      type => "syslog"
-      exclude_tags => "_grokparsefailure"
-      replace => [ "@source_host", "%{syslog_hostname}" ]
-      replace => [ "@message", "%{syslog_message}" ]
-  }
-  mutate {
-      type => "syslog"
-      remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
-  }
-}
-
 output {
  elasticsearch_http {
  host => "127.0.0.1"
