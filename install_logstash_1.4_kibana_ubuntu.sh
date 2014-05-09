@@ -239,7 +239,9 @@ service rsyslog restart
 service logstash restart
 
 # Install and configure Kibana3 frontend
-mkdir /var/www/html
+if [ ! -d "/var/www/html" ]; then
+	mkdir /var/www/html
+fi
 cd /var/www/html
 wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.1.tar.gz
 tar zxvf kibana-*
