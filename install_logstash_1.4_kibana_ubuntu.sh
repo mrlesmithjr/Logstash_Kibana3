@@ -63,7 +63,7 @@ cd /opt
 wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
 tar zxvf logstash-*.tar.gz
 mv logstash-1.4.1 logstash
-./opt/logstash/bin/plugin install contrib
+/opt/logstash/bin/plugin install contrib
 
 # Create Logstash Init Script
 (
