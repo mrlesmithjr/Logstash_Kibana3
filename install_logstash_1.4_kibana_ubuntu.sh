@@ -160,27 +160,85 @@ echo "You entered ${red}$yourdomainname${NC}"
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
 input {
- udp {
-  type => "syslog"
-  port => "514"
- }
+        udp {
+			type => "syslog"
+            port => "514"
+        }
 }
 filter {
         if [type] == "syslog" {
-                dns {
+			dns {
                 reverse => [ "host" ] action => "replace"
-                }
-        if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
-                mutate { add_tag => [ "VMware" ] }
-                }
-        }
+			}
+			if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
+				mutate { add_tag => [ "VMware" ]
+				}
+			}	
+			if [host] !~ /.*?(esxi).*?(everythingshouldbevirtual.local)?/ {
+				mutate { add_tag => [ "syslog" ]
+				}
+			}
+		}
+}
+filter {
+	if "syslog" in [tags] {
+		grok {
+			pattern => [ "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
+			add_field => [ "received_at", "%{@timestamp}" ]
+			add_field => [ "received_from", "%{@source_host}" ]
+		}
+		date {
+			match => [ "syslog_timestamp", "MMM d HH:mm:ss", "MMM dd HH:mm:ss" ]
+		}
+		mutate {
+			exclude_tags => "_grokparsefailure"
+			replace => [ "@source_host", "%{syslog_hostname}" ]
+			replace => [ "@message", "%{syslog_message}" ]
+		}
+		mutate {
+			remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
+		}
+	}
+	if "_grokparsefailure" in [tags] {
+		if "syslog" in [tags] {
+			grok {
+				break_on_match => false
+				match => [
+				"message", "${GREEDYDATA:message-syslog}"
+				]
+			}
+		}
+	}
+}
+filter {
+	if "VMware" in [tags] {
+		grok {
+			break_on_match => false
+			match => [
+				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
+				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
+				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}"
+			]
+		}
+	}
+	if "_grokparsefailure" in [tags] {
+		if "VMware" in [tags] {
+			grok {
+				break_on_match => false
+				match => [
+					"message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
+					"message", "${GREEDYDATA:message-syslog}"
+				]
+			}
+		}
+	}
 }
 output {
- elasticsearch_http {
- host => "127.0.0.1"
- flush_size => 1
-manage_template => false
- }
+        elasticsearch_http {
+                host => "127.0.0.1"
+                flush_size => 1
+                manage_template => false
+        }
 }
 EOF
 
