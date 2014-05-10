@@ -155,83 +155,145 @@ echo "(example - yourcompany.com)"
 echo -n "Enter your domain name and press enter: "
 read yourdomainname
 echo "You entered ${red}$yourdomainname${NC}"
+echo "Now enter your PFSense Firewall hostname if you use it ${red}(DO NOT include your domain name)${NC}"
+echo "If you do not use PFSense Firewall enter ${red}pfsense${NC}"
+echo -n "Enter PFSense Hostname: "
+read pfsensehostname
+echo "You entered ${red}$pfsensehostname${NC}"
 
 # Create Logstash configuration file
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
 input {
         udp {
-			type => "syslog"
-            port => "514"
+                type => "syslog"
+                port => "514"
         }
 }
 filter {
         if [type] == "syslog" {
-			dns {
-                reverse => [ "host" ] action => "replace"
-			}
-			if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
-				mutate { add_tag => [ "VMware" ]
-				}
-			}	
-			if [host] !~ /.*?(esxi).*?(everythingshouldbevirtual.local)?/ {
-				mutate { add_tag => [ "syslog" ]
-				}
-			}
-		}
+                        dns {
+                                reverse => [ "host" ] action => "replace"
+                        }
+                        if [host] =~ /.*?($pfsensehostname).*?($yourdomainname)?/ {
+                                mutate { add_tag => [ "PFSense"]
+                                }
+                        }
+                        else if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
+                                mutate { add_tag => [ "VMware" ]
+                                }
+                        }
+                        else {
+                                mutate { add_tag => [ "syslog" ]
+                                }
+                        }
+        }
 }
 filter {
-	if "syslog" in [tags] {
-		grok {
-			pattern => [ "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
-			add_field => [ "received_at", "%{@timestamp}" ]
-			add_field => [ "received_from", "%{@source_host}" ]
-		}
-		date {
-			match => [ "syslog_timestamp", "MMM d HH:mm:ss", "MMM dd HH:mm:ss" ]
-		}
-		mutate {
-			exclude_tags => "_grokparsefailure"
-			replace => [ "@source_host", "%{syslog_hostname}" ]
-			replace => [ "@message", "%{syslog_message}" ]
-		}
-		mutate {
-			remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
-		}
-	}
-	if "_grokparsefailure" in [tags] {
-		if "syslog" in [tags] {
-			grok {
-				break_on_match => false
-				match => [
-				"message", "${GREEDYDATA:message-syslog}"
-				]
-			}
-		}
-	}
+        if "syslog" in [tags] {
+                grok {
+                        pattern => [ "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
+                        add_field => [ "received_at", "%{@timestamp}" ]
+                        add_field => [ "received_from", "%{@source_host}" ]
+                }
+                date {
+                        match => [ "syslog_timestamp", "MMM d HH:mm:ss", "MMM dd HH:mm:ss" ]
+                }
+                mutate {
+                        exclude_tags => "_grokparsefailure"
+                        replace => [ "@source_host", "%{syslog_hostname}" ]
+                        replace => [ "@message", "%{syslog_message}" ]
+                }
+                mutate {
+                        remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
+                }
+        }
+        if "_grokparsefailure" in [tags] {
+                if "syslog" in [tags] {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                "message", "${GREEDYDATA:message-syslog}"
+                                ]
+                        }
+                }
+        }
 }
 filter {
-	if "VMware" in [tags] {
-		grok {
-			break_on_match => false
-			match => [
-				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
-				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
-				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}"
-			]
-		}
-	}
-	if "_grokparsefailure" in [tags] {
-		if "VMware" in [tags] {
-			grok {
-				break_on_match => false
-				match => [
-					"message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
-					"message", "${GREEDYDATA:message-syslog}"
-				]
-			}
-		}
-	}
+        if "VMware" in [tags] {
+                grok {
+                        break_on_match => false
+                        match => [
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}"
+                        ]
+                }
+        }
+        if "_grokparsefailure" in [tags] {
+                if "VMware" in [tags] {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                        "message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
+                                        "message", "${GREEDYDATA:message-syslog}"
+                                ]
+                        }
+                }
+        }
+}
+filter {
+    if "PFSense" in [tags] {
+        grok {
+            add_tag => [ "firewall" ]
+            match => [ "message", "<(?<evtid>.*)>(?<datetime>(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9]) (?:2[0123]|[01]?[0-9]):(?:[0-5][0-9]):(?:[0-5][0-9])) (?<prog>.*?): (?<msg>.*)" ]
+        }
+        mutate {
+            gsub => ["datetime","  "," "]
+        }
+        date {
+            match => [ "datetime", "MMM dd HH:mm:ss" ]
+        }
+        mutate {
+            replace => [ "message", "%{msg}" ]
+        }
+        mutate {
+            remove_field => [ "msg", "datetime" ]
+        }
+    }
+    if [prog] =~ /^pf$/ {
+        mutate {
+            add_tag => [ "packetfilter" ]
+        }
+        multiline {
+            pattern => "^\s+|^\t\s+"
+            what => "previous"
+        }
+        mutate {
+            remove_field => [ "msg", "datetime" ]
+            remove_tag => [ "multiline" ]
+        }
+        grok {
+            match => [ "message", "rule (?<rule>.*)\(.*\): (?<action>pass|block) .* on (?<iface>.*): .* proto (?<proto>TCP|UDP|IGMP|ICMP) .*\n\s*(?<src_ip>(\d+\.\d+\.\d+\.\d+))\.?(?<src_port>(\d*)) [<|>] (?<dest_ip>(\d+\.\d+\.\d+\.\d+))\.?(?<dest_port>(\d*)):" ]
+        }
+    }
+    if [prog] =~ /^dhcpd$/ {
+        if [message] =~ /^DHCPACK|^DHCPREQUEST|^DHCPOFFER/ {
+            grok {
+                match => [ "message", "(?<action>.*) (on|for|to) (?<src_ip>[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]) .*(?<mac_address>[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]).* via (?<iface>.*)" ]
+            }
+        }
+        if [message] =~ /^DHCPDISCOVER/ {
+            grok {
+                match => [ "message", "(?<action>.*) from (?<mac_address>[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]).* via (?<iface>.*)" ]
+            }
+        }
+        if [message] =~ /^DHCPINFORM/ {
+            grok {
+                match => [ "message", "(?<action>.*) from (?<src_ip>.*).* via (?<iface>.*)" ]
+            }
+        }
+    }
 }
 output {
         elasticsearch_http {
