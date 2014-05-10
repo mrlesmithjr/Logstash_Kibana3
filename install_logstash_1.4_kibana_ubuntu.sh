@@ -192,30 +192,22 @@ filter {
 filter {
         if "syslog" in [tags] {
                 grok {
-                        pattern => [ "%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" ]
+                        match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
                         add_field => [ "received_at", "%{@timestamp}" ]
-                        add_field => [ "received_from", "%{@source_host}" ]
+                        add_field => [ "received_from", "%{host}" ]
                 }
+		syslog_pri { }
                 date {
                         match => [ "syslog_timestamp", "MMM d HH:mm:ss", "MMM dd HH:mm:ss" ]
                 }
+                if !("_grokparsefailure" in [tags]) {
+			mutate {
+				replace => [ "@source_host", "%{syslog_hostname}" ]
+				replace => [ "@message", "%{syslog_message}" ]
+				}
+			}
                 mutate {
-                        exclude_tags => "_grokparsefailure"
-                        replace => [ "@source_host", "%{syslog_hostname}" ]
-                        replace => [ "@message", "%{syslog_message}" ]
-                }
-                mutate {
-                        remove => [ "syslog_hostname", "syslog_message", "syslog_timestamp", "received_at", "received_from" ]
-                }
-        }
-        if "_grokparsefailure" in [tags] {
-                if "syslog" in [tags] {
-                        grok {
-                                break_on_match => false
-                                match => [
-                                "message", "${GREEDYDATA:message-syslog}"
-                                ]
-                        }
+                        remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
                 }
         }
 }
