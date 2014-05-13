@@ -291,12 +291,6 @@ filter {
         mutate {
             replace => [ "message", "%{msg}" ]
         }
-		mutate {
-			replace => [ "@message", "%{msg}" ]
-		}
-		mutate {
-			replace => [ "@source_host", "%{host}" ]
-		}
         mutate {
             remove_field => [ "msg", "datetime" ]
         }
@@ -348,6 +342,12 @@ filter {
 		}
 		mutate {
 			replace => [ "@source_host", "%{host}" ]
+		}
+		mutate {
+                        replace => [ "@message", "%{message}" ]
+                }
+		mutate {
+				add_tag => [ "apache" ]
 		}
 	}
 }
