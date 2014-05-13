@@ -330,6 +330,16 @@ filter {
     }
 }
 filter {
+        if "PFSense" in [tags] {
+                mutate {
+                        replace => [ "@source_host", "%{host}" ]
+                }
+                mutate {
+                        replace => [ "@message", "%{message}" ]
+                }
+        }
+}
+filter {
 	if "apache" in [type] {
 		geoip {
 			source => "clientip"
