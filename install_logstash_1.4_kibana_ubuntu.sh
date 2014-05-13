@@ -259,7 +259,10 @@ filter {
 		}
 		mutate {
 			replace => [ "@source_host", "%{hostname}" ]
-		}	
+		}
+		mutate {
+                       	replace => [ "@message", "%{message-syslog}" ]
+                }	
 	}
 	if "_grokparsefailure" in [tags] {
 		if "VMware" in [tags] {
