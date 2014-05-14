@@ -174,107 +174,123 @@ input {
   }
 }
 input {
-	udp {
-		type => "syslog"
-		port => "514"
-	}
+        udp {
+                type => "syslog"
+                port => "514"
+        }
 }
 input {
-	tcp {
-			type => "eventlog"
-			port => 3515
-			format => 'json'
-	}
+        tcp {
+                type => "eventlog"
+                port => 3515
+                format => 'json'
+        }
 }
 input {
-	tcp {
-			type => "iis"
-			port => 3525
-			format => 'json'
-	}
+        tcp {
+                type => "iis"
+                port => 3525
+                format => 'json'
+        }
 }
 filter {
-	if [type] == "syslog" {
-		dns {
-			reverse => [ "host" ] action => "replace"
-		}
-		if [host] =~ /.*?($pfsensehostname).*?($yourdomainname)?/ {
-			mutate {
-				add_tag => [ "PFSense"]
-			}
-		}
-		else if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
-			mutate {
-				add_tag => [ "VMware" ]
-			}
-		}
-		else {
-			mutate {
-				add_tag => [ "syslog" ]
-			}
-		}
-	}
-	if [type] == "eventlog" {
-		mutate {
-			add_tag => [ "WindowsEventLog" ]
-		}
-	}
-	if [type] == "iis" {
-		mutate {
-			add_tag => [ "IISLogs" ]
-		}
-	}
+        if [type] == "syslog" {
+                dns {
+                        reverse => [ "host" ] action => "replace"
+                }
+                if [host] =~ /.*?($netscalernaming).*?($yourdomainname)?/ {
+                        mutate {
+                                add_tag => [ "Netscaler", "Ready" ]
+                        }
+                }
+                if [host] =~ /.*?($pfsensehostname).*?($yourdomainname)?/ {
+                        mutate {
+                                add_tag => [ "PFSense", "Ready" ]
+                        }
+                }
+                if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
+                        mutate {
+                                add_tag => [ "VMware", "Ready" ]
+                        }
+                }
+                if "Ready" not in [tags] {
+                        mutate {
+                                add_tag => [ "syslog" ]
+                        }
+                }
+        }
+        if [type] == "eventlog" {
+                mutate {
+                        add_tag => [ "WindowsEventLog" ]
+                }
+        }
+        if [type] == "iis" {
+                mutate {
+                        add_tag => [ "IISLogs" ]
+                }
+        }
 }
 filter {
-	if "syslog" in [tags] {
-		grok {
-			match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
-			add_field => [ "received_at", "%{@timestamp}" ]
-			add_field => [ "received_from", "%{host}" ]
-		}
-		syslog_pri { }
-		date {
-			match => [ "syslog_timestamp", "MMM d HH:mm:ss", "MMM dd HH:mm:ss" ]
-		}
-		if !("_grokparsefailure" in [tags]) {
-			mutate {
-				replace => [ "@source_host", "%{syslog_hostname}" ]
-				replace => [ "@message", "%{syslog_message}" ]
-			}
-		}
-		mutate {
-			remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
-		}
-	}
+        if [type] == "syslog" {
+                mutate {
+                        remove_tag => "Ready"
+                }
+        }
 }
 filter {
-	if "VMware" in [tags] {
-		grok {
-			break_on_match => false
-			match => [
-				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
-				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
-				"message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}"
-			]
-		}
-		mutate {
-			replace => [ "@source_host", "%{hostname}" ]
-		}
-		mutate {
-                       	replace => [ "@message", "%{message-syslog}" ]
-                }	
-	}
-	if "_grokparsefailure" in [tags] {
-		if "VMware" in [tags] {
-			grok {
-				break_on_match => false
-				match => [
-					"message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
-					"message", "${GREEDYDATA:message-syslog}"
-				]
-			}
-		}
-	}
+        if "syslog" in [tags] {
+ 
+                grok {
+                        match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+                        add_field => [ "received_at", "%{@timestamp}" ]
+                        add_field => [ "received_from", "%{host}" ]
+                }
+                syslog_pri { }
+                date {
+                        match => [ "syslog_timestamp", "MMM d HH:mm:ss", "MMM dd HH:mm:ss" ]
+                }
+                if !("_grokparsefailure" in [tags]) {
+                        mutate {
+                                replace => [ "@source_host", "%{syslog_hostname}" ]
+                                replace => [ "@message", "%{syslog_message}" ]
+                        }
+                }
+                mutate {
+                        remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
+                }
+                if "_grokparsefailure" in [tags] {
+                        drop { }
+                }
+        }
+}
+filter {
+        if "VMware" in [tags] {
+                grok {
+                        break_on_match => false
+                        match => [
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}"
+                        ]
+                }
+                mutate {
+                        replace => [ "@source_host", "%{hostname}" ]
+                }
+                mutate {
+                        replace => [ "@message", "%{message-syslog}" ]
+                }
+        }
+        if "_grokparsefailure" in [tags] {
+                if "VMware" in [tags] {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                        "message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
+                                        "message", "${GREEDYDATA:message-syslog}"
+                                ]
+                        }
+                }
+        }
 }
 filter {
     if "PFSense" in [tags] {
@@ -327,6 +343,9 @@ filter {
                 match => [ "message", "(?<action>.*) from (?<src_ip>.*).* via (?<iface>.*)" ]
             }
         }
+        if "_grokparsefailure" in [tags] {
+            drop { }
+        }
     }
 }
 filter {
@@ -340,78 +359,126 @@ filter {
         }
 }
 filter {
-	if "apache" in [type] {
-		geoip {
-			source => "clientip"
-			target => "geoip"
-			add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
-			add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
-		}
-		mutate {
-			convert => [ "[geoip][coordinates]", "float" ]
-		}
-		mutate {
-			replace => [ "@source_host", "%{host}" ]
-		}
-		mutate {
+        if "Netscaler" in [tags] {
+                grok {
+                        break_on_match => true
+                        match => [
+                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:netscaler_client_ip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
+                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message}"
+                        ]
+                }
+                syslog_pri { }
+                mutate {
+                        replace => [ "@source_host", "%{host}" ]
+                }
+                mutate {
+                        replace => [ "@message", "%{netscaler_message}" ]
+                }
+                geoip {
+                        source => "netscaler_client_ip"
+                        target => "geoip"
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                }
+                mutate {
+                        convert => [ "[geoip][coordinates]", "float" ]
+                }
+        }
+}
+filter {
+        if "apache" in [type] {
+                geoip {
+                        source => "clientip"
+                        target => "geoip"
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                }
+                mutate {
+                        convert => [ "[geoip][coordinates]", "float" ]
+                }
+                mutate {
+                        replace => [ "@source_host", "%{host}" ]
+                }
+                mutate {
                         replace => [ "@message", "%{message}" ]
                 }
-		mutate {
-				add_tag => [ "apache" ]
-		}
-	}
+                mutate {
+                        rename => [ "verb" , "method" ]
+                }
+                mutate {
+                                add_tag => [ "apache" ]
+                }
+        }
 }
 filter {
-	if [type] == "eventlog" {
-		grep {
-			match => { "EventReceivedTime"  => "\d+"}
-		}
-		mutate {
-			lowercase => [ "EventType", "FileName", "Hostname", "Severity" ]
-		}
-		mutate {
-			rename => [ "Hostname", "@source_host" ]
-		}
-		date {
-			match => [ "EventReceivedTime", "UNIX" ]
-		}
-		mutate {
-			rename => [ "Message", "@message" ]
-			rename => [ "Severity", "eventlog_severity" ]
-			rename => [ "SeverityValue", "eventlog_severity_code" ]
-			rename => [ "Channel", "eventlog_channel" ]
-			rename => [ "SourceName", "eventlog_program" ]
-			rename => [ "SourceModuleName", "nxlog_input" ]
-			rename => [ "Category", "eventlog_category" ]
-			rename => [ "EventID", "eventlog_id" ]
-			rename => [ "RecordNumber", "eventlog_record_number" ]
-			rename => [ "ProcessID", "eventlog_pid" ]
-		}
-		mutate {
-			remove => [ "SourceModuleType", "EventTimeWritten", "EventTime", "EventReceivedTime", "EventType" ]
-		}
-	}
+        if [type] == "eventlog" {
+                grep {
+                        match => { "EventReceivedTime"  => "\d+"}
+                }
+                mutate {
+                        lowercase => [ "EventType", "FileName", "Hostname", "Severity" ]
+                }
+                mutate {
+                        rename => [ "Hostname", "@source_host" ]
+                }
+                date {
+                        match => [ "EventReceivedTime", "UNIX" ]
+                }
+                mutate {
+                        rename => [ "Message", "@message" ]
+                        rename => [ "Severity", "eventlog_severity" ]
+                        rename => [ "SeverityValue", "eventlog_severity_code" ]
+                        rename => [ "Channel", "eventlog_channel" ]
+                        rename => [ "SourceName", "eventlog_program" ]
+                        rename => [ "SourceModuleName", "nxlog_input" ]
+                        rename => [ "Category", "eventlog_category" ]
+                        rename => [ "EventID", "eventlog_id" ]
+                        rename => [ "RecordNumber", "eventlog_record_number" ]
+                        rename => [ "ProcessID", "eventlog_pid" ]
+                }
+                mutate {
+                        remove => [ "SourceModuleType", "EventTimeWritten", "EventTime", "EventReceivedTime", "EventType" ]
+                }
+        }
 }
 filter {
-	if [type] == "iis" {
-		if [message] =~ "^#" {
-				drop {}
-		}
-		grok {
-			match => ["message", "%{DATESTAMP:eventtime} %{IP:host_ip} %{URIPROTO:method} %{URIPATH:path} (?:-|%{NOTSPACE:uri_query}sern) %{NUMBER:port} %{NOTSPACE:username} %{IP:client_ip} %{NOTSPACE:useragent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:scstatus} %{NUMBER:timetaken}"]
-		} 
-		date {
-			 match => ["eventtime", "YY-MM-dd HH:mm:ss"]  
-		}
-	}
+        if [type] == "iis" {
+                if [message] =~ "^#" {
+                                drop {}
+                }
+                grok {
+                        match => [
+                        "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}",
+                        "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{GREEDYDATA:syslog_message}"  
+                        ]
+                }
+                date {
+                         match => ["eventtime", "YY-MM-dd HH:mm:ss"]
+                }
+                mutate {
+                        replace => [ "@source_host", "%{servername}" ]
+                }
+                mutate {
+                        replace => [ "@message", "%{message}" ]
+                }
+                geoip {
+                        source => "clientip"
+                        target => "geoip"
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                }
+                mutate {
+                        convert => [ "[geoip][coordinates]", "float" ]
+                }
+        }
 }
 output {
-	elasticsearch_http {
-		host => "127.0.0.1"
-		flush_size => 1
-		manage_template => true
-		template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
-	}
+        elasticsearch_http {
+                host => "127.0.0.1"
+                flush_size => 1
+                manage_template => true
+                template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+        }
 }
 EOF
 
