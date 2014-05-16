@@ -31,7 +31,7 @@ sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
 apt-get -qq update
 
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless ruby ruby1.9.1-dev libcurl4-openssl-dev git apache2
+apt-get install -y --force-yes openjdk-7-jre-headless ruby ruby1.9.1-dev libcurl4-openssl-dev git apache2 curl
 
 # Install Redis-Server
 apt-get -y install redis-server
@@ -239,7 +239,7 @@ filter {
 }
 filter {
         if "syslog" in [tags] {
- 
+
                 grok {
                         match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
                         add_field => [ "received_at", "%{@timestamp}" ]
@@ -278,6 +278,20 @@ filter {
                 }
                 mutate {
                         replace => [ "@message", "%{message-syslog}" ]
+                }
+                if "Device naa" in [message] {
+                        grok {
+                                match => [
+                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}"
+                                ]
+                        }
+                }
+                if "WARNING" in [message] {
+                        grok {
+                                match => [
+                                        "message", "WARNING: %{GREEDYDATA:vmware_warning_msg}"
+                                ]
+                        }
                 }
         }
         if "_grokparsefailure" in [tags] {
@@ -343,10 +357,11 @@ filter {
                 match => [ "message", "(?<action>.*) from (?<src_ip>.*).* via (?<iface>.*)" ]
             }
         }
-        if "_grokparsefailure" in [tags] {
-            drop { }
-        }
-    }
+   }
+   if "_grokparsefailure" in [tags] {
+        drop { }
+   }
+
 }
 filter {
         if "PFSense" in [tags] {
@@ -408,6 +423,11 @@ filter {
                 mutate {
                                 add_tag => [ "apache" ]
                 }
+                grok {
+                        match => [
+                                "message", "%{DATA:apache_vhost} "
+                        ]
+                }
         }
 }
 filter {
@@ -448,8 +468,8 @@ filter {
                 }
                 grok {
                         match => [
-                        "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}",
-                        "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{GREEDYDATA:syslog_message}"  
+                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}",
+                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{GREEDYDATA:syslog_message}"
                         ]
                 }
                 date {
@@ -489,6 +509,7 @@ service rsyslog restart
 service logstash restart
 
 # Install and configure Kibana3 frontend
+# This is in place seeing as Apache2 on Ubuntu 14.04 default website is no longer /var/www but instead /var/www/html. This allows for backwards compatability as well as forward compatability.
 if [ ! -d "/var/www/html" ]; then
 	mkdir /var/www/html
 fi
@@ -498,6 +519,50 @@ tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
 ln -s /var/www/html/kibana /var/www/kibana
+
+# Install elasticsearch curator http://www.elasticsearch.org/blog/curator-tending-your-time-series-indices/
+apt-get install python-pip
+pip install elasticsearch-curator
+
+# Create /etc/cron.daily/elasticsearch_curator Cron Job
+tee -a /etc/cron.daily/elasticsearch_curator <<EOF
+#!/bin/sh
+/usr/local/bin/curator --host 127.0.0.1 -d 90 -l /var/log/elasticsearch_curator.log
+/usr/local/bin/curator --host 127.0.0.1 -c 30 -l /var/log/elasticsearch_curator.log
+/usr/local/bin/curator --host 127.0.0.1 -b 2 -l /var/log/elasticsearch_curator.log
+/usr/local/bin/curator --host 127.0.0.1 -o 2 --timeout 3600 -l /var/log/elasticsearch_curator.log
+
+# Email report
+#recipients="emailAdressToReceiveReport"
+#subject="Daily Elasticsearch Curator Job Report"
+#cat /var/log/elasticsearch_curator.log | mail -s $subject $recipients
+EOF
+
+# Create logrotate jobs to rotate logstash logs and elasticsearch_curator logs
+# Logrotate job for logstash
+tee -a /etc/logrotate.d/logstash <<EOF
+/var/log/logstash.log {
+        monthly
+        rotate 12
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 644 root root
+}
+EOF
+# Logrotate job for elasticsearch_curator
+tee -a /etc/logrotate.d/elasticsearch_curator <<EOF
+/var/log/elasticsearch_curator.log {
+        monthly
+        rotate 12
+        compress
+        delaycompress
+        missingok
+        notifempty
+        create 644 root root
+}
+EOF
 
 # All Done
 echo "Installation has completed!!"
