@@ -57,6 +57,9 @@ sed -i '$a\index.number_of_shards: 1' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\index.number_of_replicas: 0' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\bootstrap.mlockall: true' /etc/elasticsearch/elasticsearch.yml
 
+# Set Elasticsearch to start on boot
+sudo update-rc.d elasticsearch defaults 95 10
+
 # Restart Elasticsearch service
 service elasticsearch restart
 
