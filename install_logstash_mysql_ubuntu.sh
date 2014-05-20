@@ -143,7 +143,7 @@ filter {
 		}
 	    grok { pattern => "^%{NUMBER:date} *%{NOTSPACE:time}" }
 		mutate { replace => [ "time", "%{date} %{time}" ] }
-		date { time => [ "YYMMdd H:mm:ss", "YYMMdd HH:mm:ss" ] }
+		date { match => [ "YYMMdd H:mm:ss", "YYMMdd HH:mm:ss" ] }
 		mutate { remove => [ "time", "date" ] }
 		split { }
 	}
