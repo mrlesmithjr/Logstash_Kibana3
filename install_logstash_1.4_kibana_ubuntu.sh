@@ -147,7 +147,7 @@ EOF
 chmod +x /etc/init.d/logstash
 
 # Enable logstash start on bootup
-update-rc.d logstash defaults
+update-rc.d logstash defaults 96 04
 
 echo "Setting up logstash for ESXi host filtering"
 echo "ESXi host naming convention: (example:esxi|esx|other - Only enter common naming)"
