@@ -201,7 +201,7 @@ filter {
                 dns {
                         reverse => [ "host" ] action => "replace"
                 }
-                if [host] =~ /.*?($netscalernaming).*?($yourdomainname)?/ {
+                if [host] =~ /.*?(nsvpx).*?($yourdomainname)?/ {
                         mutate {
                                 add_tag => [ "Netscaler", "Ready" ]
                         }
