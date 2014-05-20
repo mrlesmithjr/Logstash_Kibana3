@@ -31,7 +31,7 @@ sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
 apt-get -qq update
 
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless ruby ruby1.9.1-dev libcurl4-openssl-dev git apache2 curl mailutils
+apt-get install -y --force-yes openjdk-7-jre-headless ruby ruby1.9.1-dev libcurl4-openssl-dev git apache2 curl
 
 # Install Redis-Server
 apt-get -y install redis-server
