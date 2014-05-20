@@ -524,7 +524,7 @@ mv kibana-* kibana
 ln -s /var/www/html/kibana /var/www/kibana
 
 # Install elasticsearch curator http://www.elasticsearch.org/blog/curator-tending-your-time-series-indices/
-apt-get install python-pip
+apt-get -y install python-pip
 pip install elasticsearch-curator
 
 # Create /etc/cron.daily/elasticsearch_curator Cron Job
