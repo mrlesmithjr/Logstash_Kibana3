@@ -63,6 +63,10 @@ sudo update-rc.d elasticsearch defaults 95 10
 # Restart Elasticsearch service
 service elasticsearch restart
 
+# Install ElasticHQ Plugin to view Elasticsearch Cluster Details http://elastichq.org
+# To view these stats connect to http://logstashFQDNorIP:9200/_plugin/HQ/
+./usr/share/elasticsearch/bin/plugin -install royrusso/elasticsearch-HQ
+
 # Install Logstash
 cd /opt
 wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
