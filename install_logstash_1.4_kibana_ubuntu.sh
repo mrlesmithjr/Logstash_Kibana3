@@ -545,6 +545,9 @@ tee -a /etc/cron.daily/elasticsearch_curator <<EOF
 #cat /var/log/elasticsearch_curator.log | mail -s $subject $recipients
 EOF
 
+# Make elasticsearch_curator executable
+chmod +x /etc/cron.daily/elasticsearch_curator
+
 # Create logrotate jobs to rotate logstash logs and elasticsearch_curator logs
 # Logrotate job for logstash
 tee -a /etc/logrotate.d/logstash <<EOF
