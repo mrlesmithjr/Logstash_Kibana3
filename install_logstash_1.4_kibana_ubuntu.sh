@@ -65,7 +65,7 @@ service elasticsearch restart
 
 # Install ElasticHQ Plugin to view Elasticsearch Cluster Details http://elastichq.org
 # To view these stats connect to http://logstashFQDNorIP:9200/_plugin/HQ/
-./usr/share/elasticsearch/bin/plugin -install royrusso/elasticsearch-HQ
+/usr/share/elasticsearch/bin/plugin -install royrusso/elasticsearch-HQ
 
 # Install Logstash
 cd /opt
