@@ -153,17 +153,22 @@ chmod +x /etc/init.d/logstash
 # Enable logstash start on bootup
 update-rc.d logstash defaults 96 04
 
-echo "Setting up logstash for ESXi host filtering"
-echo "ESXi host naming convention: (example:esxi|esx|other - Only enter common naming)"
-echo "(example - esxi01,esxi02, etc. - Only enter esxi)"
-echo -n "Enter ESXi host naming convention and press enter: "
-read esxinaming
-echo "You entered ${red}$esxinaming${NC}"
+echo "Setting up logstash for different host type filtering"
 echo "Your domain name:"
 echo "(example - yourcompany.com)"
 echo -n "Enter your domain name and press enter: "
 read yourdomainname
 echo "You entered ${red}$yourdomainname${NC}"
+echo "ESXi host name or naming convention: (example:esxi|esx|other - Only enter common naming)"
+echo "(example - esxi01,esxi02, etc. - Only enter esxi)"
+echo -n "Enter ESXi host naming convention and press enter: "
+read esxinaming
+echo "You entered ${red}$esxinaming${NC}"
+echo "VMware vCenter host name or naming convention: (example:vcenter|vcsa|other - Only enter common naming)"
+echo "(example - vc01,vc02, etc. - Only enter vc)"
+echo -n "Enter vCenter host naming convention and press enter: "
+read vcenternaming
+echo "You entered ${red}$vcenternaming${NC}"
 echo "Now enter your PFSense Firewall hostname if you use it ${red}(DO NOT include your domain name)${NC}"
 echo "If you do not use PFSense Firewall enter ${red}pfsense${NC}"
 echo -n "Enter PFSense Hostname: "
@@ -218,6 +223,11 @@ filter {
                 if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
                         mutate {
                                 add_tag => [ "VMware", "Ready" ]
+                        }
+                }
+                if [host] =~ /.*?($vcenternaming).*?($yourdomainname)?/ {
+                        mutate {
+                                add_tag => [ "vCenter", "Ready" ]
                         }
                 }
                 if "Ready" not in [tags] {
@@ -280,6 +290,7 @@ filter {
                                 "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}"
                         ]
                 }
+                syslog_pri { }
                 mutate {
                         replace => [ "@source_host", "%{hostname}" ]
                 }
@@ -290,6 +301,13 @@ filter {
                         grok {
                                 match => [
                                         "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}"
+                                ]
+                        }
+                }
+                if "connectivity issues" in [message] {
+                        grok {
+                                match => [
+                                        "message", "Hostd: %{GREEDYDATA} : %{DATA:device_access} to volume %{DATA:device_id} %{DATA:datastore} (following|due to)"
                                 ]
                         }
                 }
@@ -310,6 +328,36 @@ filter {
                                         "message", "${GREEDYDATA:message-syslog}"
                                 ]
                         }
+                }
+        }
+}
+filter {
+        if "vCenter" in [tags] {
+                grok {
+                        break_on_match => false
+                        match => [
+                                "message", "%{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "%{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{GREEDYDATA:message-syslog}"
+                        ]
+                }
+
+                if "_grokparsefailure" in [tags] {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                        "message", "${GREEDYDATA:message-syslog}"
+                                ]
+                        }
+                }
+                syslog_pri { }
+                mutate {
+                        replace => [ "@message", "%{message-syslog}" ]
+                        rename => [ "host", "@source_host" ]
+                        rename => [ "hostname", "syslog_source-hostname" ]
+                        rename => [ "program", "message_program" ]
+                        rename => [ "message_vce_server", "syslog_source-hostname" ]
+                        remove_field => [ "@version", "type", "path" ]
                 }
         }
 }
@@ -496,6 +544,13 @@ filter {
                 }
                 mutate {
                         convert => [ "[geoip][coordinates]", "float" ]
+                }
+        }
+}
+filter {
+        if [type] == "mysql-slowquery" {
+                mutate {
+                        add_tag => [ "Mysql" ]
                 }
         }
 }
