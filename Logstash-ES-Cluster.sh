@@ -44,7 +44,7 @@ dpkg -i elasticsearch-1.1.1.deb
 
 # Configuring Elasticsearch
 sed -i '$a\cluster.name: logstash-cluster' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.name: "$yourhostname"' /etc/elasticsearch/elasticsearch.yml
+sed -i '$a\node.name: $yourhostname' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\node.master: true' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\node.data: true' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\index.number_of_shards: 5' /etc/elasticsearch/elasticsearch.yml
