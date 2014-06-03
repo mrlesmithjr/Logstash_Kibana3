@@ -6,8 +6,8 @@
 set -e
 # Setup logging
 # Logs stderr and stdout to separate files.
-exec 2> >(tee "./Logstash_Kibana3/install_logstash_kibana_ubuntu.err")
-exec > >(tee "./Logstash_Kibana3/install_logstash_kibana_ubuntu.log")
+exec 2> >(tee "./Logstash_Kibana3/install_logstash_es_cluster_ubuntu.err")
+exec > >(tee "./Logstash_Kibana3/install_logstash_es_cluster_ubuntu.log")
 
 # Setting colors for output
 red="$(tput setaf 1)"
