@@ -231,9 +231,15 @@ input {
   }
 }
 input {
-        udp {
+        tcp {
                 type => "syslog"
                 port => "514"
+        }
+}
+input {
+        tcp {
+                type => "VMware"
+                port => "1514"
         }
 }
 input {
@@ -279,6 +285,11 @@ filter {
                         mutate {
                                 add_tag => [ "syslog" ]
                         }
+                }
+        }
+        if [type] == "VMware" {
+                mutate {
+                        add_tag => "VMware"
                 }
         }
         if [type] == "eventlog" {
