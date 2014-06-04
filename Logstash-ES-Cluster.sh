@@ -198,28 +198,6 @@ chmod +x /etc/init.d/logstash
 # Enable logstash start on bootup
 update-rc.d logstash defaults 96 04
 
-echo "Setting up logstash for different host type filtering"
-echo "Your domain name:"
-echo "(example - yourcompany.com)"
-echo -n "Enter your domain name and press enter: "
-read yourdomainname
-echo "You entered ${red}$yourdomainname${NC}"
-echo "ESXi host name or naming convention: (example:esxi|esx|other - Only enter common naming)"
-echo "(example - esxi01,esxi02, etc. - Only enter esxi)"
-echo -n "Enter ESXi host naming convention and press enter: "
-read esxinaming
-echo "You entered ${red}$esxinaming${NC}"
-echo "VMware vCenter host name or naming convention: (example:vcenter|vcsa|other - Only enter common naming)"
-echo "(example - vc01,vc02, etc. - Only enter vc)"
-echo -n "Enter vCenter host naming convention and press enter: "
-read vcenternaming
-echo "You entered ${red}$vcenternaming${NC}"
-echo "Now enter your PFSense Firewall hostname if you use it ${red}(DO NOT include your domain name)${NC}"
-echo "If you do not use PFSense Firewall enter ${red}pfsense${NC}"
-echo -n "Enter PFSense Hostname: "
-read pfsensehostname
-echo "You entered ${red}$pfsensehostname${NC}"
-
 # Create Logstash configuration file
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
@@ -244,6 +222,18 @@ input {
 }
 input {
         tcp {
+                type => "vCenter"
+                port => "1515"
+        }
+}
+input {
+        tcp {
+                type => "PFsense"
+                port => "1516"
+        }
+}
+input {
+        tcp {
                 type => "eventlog"
                 port => 3515
                 format => 'json'
@@ -261,35 +251,23 @@ filter {
                 dns {
                         reverse => [ "host" ] action => "replace"
                 }
-                if [host] =~ /.*?(nsvpx).*?($yourdomainname)?/ {
-                        mutate {
-                                add_tag => [ "Netscaler", "Ready" ]
-                        }
-                }
-                if [host] =~ /.*?($pfsensehostname).*?($yourdomainname)?/ {
-                        mutate {
-                                add_tag => [ "PFSense", "Ready" ]
-                        }
-                }
-                if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
-                        mutate {
-                                add_tag => [ "VMware", "Ready" ]
-                        }
-                }
-                if [host] =~ /.*?($vcenternaming).*?($yourdomainname)?/ {
-                        mutate {
-                                add_tag => [ "vCenter", "Ready" ]
-                        }
-                }
-                if "Ready" not in [tags] {
-                        mutate {
-                                add_tag => [ "syslog" ]
-                        }
+                mutate {
+                        add_tag => [ "syslog" ]
                 }
         }
         if [type] == "VMware" {
                 mutate {
                         add_tag => "VMware"
+                }
+        }
+        if [type] == "vCenter" {
+                mutate {
+                        add_tag => "vCenter"
+                }
+        }
+        if [type] == "PFsense" {
+                mutate {
+                        add_tag => "PFsense"
                 }
         }
         if [type] == "eventlog" {
@@ -304,15 +282,7 @@ filter {
         }
 }
 filter {
-        if [type] == "syslog" {
-                mutate {
-                        remove_tag => "Ready"
-                }
-        }
-}
-filter {
         if "syslog" in [tags] {
-
                 grok {
                         match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
                         add_field => [ "received_at", "%{@timestamp}" ]
@@ -381,7 +351,7 @@ filter {
                                 break_on_match => false
                                 match => [
                                         "message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
-                                        "message", "${GREEDYDATA:message-syslog}"
+                                        "message", ""
                                 ]
                         }
                 }
@@ -392,9 +362,9 @@ filter {
                 grok {
                         break_on_match => false
                         match => [
-                                "message", "%{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
-                                "message", "%{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
-                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{GREEDYDATA:message-syslog}"
+                                "message", "<%{INT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:syslog_source} %{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{INT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:syslog_source} %{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{INT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:syslog_source} %{TIMESTAMP_ISO8601:@timestamp} %{GREEDYDATA:message-syslog}"
                         ]
                 }
 
@@ -402,14 +372,14 @@ filter {
                         grok {
                                 break_on_match => false
                                 match => [
-                                        "message", "${GREEDYDATA:message-syslog}"
+                                        "message", ""
                                 ]
                         }
                 }
                 syslog_pri { }
                 mutate {
                         replace => [ "@message", "%{message-syslog}" ]
-                        rename => [ "host", "@source_host" ]
+                        rename => [ "syslog_source", "@source_host" ]
                         rename => [ "hostname", "syslog_source-hostname" ]
                         rename => [ "program", "message_program" ]
                         rename => [ "message_vce_server", "syslog_source-hostname" ]
@@ -653,7 +623,7 @@ EOF
 
 # All Done
 echo "Installation has completed!!"
-echo -e "To connect to cluster (RR DNS) connect to ${red}http://logstash/kibana${NC}"
+echo -e "To connect to cluster connect to ${red}http://logstash/kibana${NC}"
 echo -e "To connect to individual host use the info below"
 echo -e "Connect to ${red}http://$yourfqdn/kibana${NC} or ${red}http://$IPADDY/kibana${NC}"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
