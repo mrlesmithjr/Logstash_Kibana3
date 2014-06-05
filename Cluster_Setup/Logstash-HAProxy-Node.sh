@@ -128,6 +128,18 @@ chmod +x /etc/init.d/logstash
 # Enable logstash start on bootup
 update-rc.d logstash defaults 96 04
 
+echo "Setting up logstash for different host type filtering"
+echo "Your domain name:"
+echo "(example - yourcompany.com)"
+echo -n "Enter your domain name and press enter: "
+read yourdomainname
+echo "You entered ${red}$yourdomainname${NC}"
+echo "Now enter your PFSense Firewall hostname if you use it ${red}(DO NOT include your domain name)${NC}"
+echo "If you do not use PFSense Firewall enter ${red}pfsense${NC}"
+echo -n "Enter PFSense Hostname: "
+read pfsensehostname
+echo "You entered ${red}$pfsensehostname${NC}"
+
 # Create Logstash configuration file
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
@@ -147,7 +159,7 @@ filter {
                                 add_tag => [ "Netscaler", "Ready" ]
                         }
                 }
-                if [host] =~ /.*?(pfsense).*?($yourdomainname)?/ {
+                if [host] =~ /.*?($pfsensehostname).*?($yourdomainname)?/ {
                         mutate {
                                 add_tag => [ "PFSense", "Ready" ]
                         }
