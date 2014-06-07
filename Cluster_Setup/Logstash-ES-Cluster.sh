@@ -51,6 +51,13 @@ sed -i '$a\index.number_of_shards: 5' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\index.number_of_replicas: 1' /etc/elasticsearch/elasticsearch.yml
 sed -i '$a\bootstrap.mlockall: true' /etc/elasticsearch/elasticsearch.yml
 
+# Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
+mv /etc/security/limits.conf /etc/security/limits.bak
+grep -Ev "# End of file" /etc/security/limits.bak > /etc/security/limits.conf
+echo "elasticsearch soft nofile 32000" >> /etc/security/limits.conf
+echo "elasticsearch hard nofile 32000" >> /etc/security/limits.conf
+echo "# End of file" >> /etc/security/limits.conf
+
 # Set Elasticsearch to start on boot
 sudo update-rc.d elasticsearch defaults 95 10
 
