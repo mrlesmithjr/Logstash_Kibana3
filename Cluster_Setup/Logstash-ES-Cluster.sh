@@ -604,6 +604,9 @@ tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
 ln -s /var/www/html/kibana /var/www/kibana
+# Making the logstash dashboard the default
+mv /var/www/kibana/app/dashboards/default.json /var/www/kibana/app/dashboards/default.json.orig
+mv /var/www/kibana/app/dashboards/logstash.json /var/www/kibana/app/dashboards/default.json
 
 # Edit /var/www/html/kibana/config.js
 sed -i -e 's|elasticsearch: "http://"+window.location.hostname+":9200",|elasticsearch: "http://logstash:9200",|' /var/www/html/kibana/config.js
