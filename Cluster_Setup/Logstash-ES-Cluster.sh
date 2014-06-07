@@ -43,13 +43,13 @@ wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearc
 dpkg -i elasticsearch-1.1.1.deb
 
 # Configuring Elasticsearch
-sed -i '$a\cluster.name: logstash-cluster' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.name: $yourhostname' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.master: true' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.data: true' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\index.number_of_shards: 5' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\index.number_of_replicas: 1' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\bootstrap.mlockall: true' /etc/elasticsearch/elasticsearch.yml
+echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.name: $yourhostname" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.master: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.data: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "index.number_of_shards: 5" >> /etc/elasticsearch/elasticsearch.yml
+echo "index.number_of_replicas: 1" >> /etc/elasticsearch/elasticsearch.yml
+echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
 
 # Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
 mv /etc/security/limits.conf /etc/security/limits.bak
