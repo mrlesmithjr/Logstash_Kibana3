@@ -523,6 +523,36 @@ filter {
         }
 }
 filter {
+        if "nginx" in [type] {
+                geoip {
+                        source => "clientip"
+                        target => "geoip"
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                }
+                mutate {
+                        convert => [ "[geoip][coordinates]", "float" ]
+                }
+                mutate {
+                        replace => [ "@source_host", "%{host}" ]
+                }
+                mutate {
+                        replace => [ "@message", "%{message}" ]
+                }
+                mutate {
+                        rename => [ "verb" , "method" ]
+                }
+                mutate {
+                                add_tag => [ "nginx" ]
+                }
+                grok {
+                        match => [
+                                "message", "%{DATA:apache_vhost} "
+                        ]
+                }
+        }
+}
+filter {
         if [type] == "eventlog" {
                 grep {
                         match => { "EventReceivedTime"  => "\d+"}
