@@ -68,6 +68,10 @@ service elasticsearch restart
 # To view these stats connect to http://logstashFQDNorIP:9200/_plugin/HQ/
 /usr/share/elasticsearch/bin/plugin -install royrusso/elasticsearch-HQ
 
+# Install elasticsearch Marvel Plugin Details http://www.elasticsearch.org/overview/marvel/
+# To view these stats connect to http://logstashFQDNorIP:9200/_plugin/marvel
+/usr/share/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
 # Install other elasticsearch plugins
 # To view paramedic connect to http://logstashFQDNorIP:9200/_plugin/paramedic/index.html
 /usr/share/elasticsearch/bin/plugin -install karmi/elasticsearch-paramedic
