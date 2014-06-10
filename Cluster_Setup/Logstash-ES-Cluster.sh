@@ -245,6 +245,12 @@ input {
 }
 input {
         tcp {
+                type => "Netscaler"
+                port => "1517"
+        }
+}
+input {
+        tcp {
                 type => "eventlog"
                 port => 3515
                 format => 'json'
@@ -263,7 +269,7 @@ filter {
                         reverse => [ "host" ] action => "replace"
                 }
                 mutate {
-                        add_tag => [ "syslog" ]
+                        add_tag => [ "syslog-TCP", "syslog" ]
                 }
         }
         if [type] == "VMware" {
@@ -279,6 +285,11 @@ filter {
         if [type] == "PFsense" {
                 mutate {
                         add_tag => "PFsense"
+                }
+        }
+        if [type] == "Netscaler" {
+                mutate {
+                        add_tag => "Netscaler"
                 }
         }
         if [type] == "eventlog" {
@@ -314,6 +325,29 @@ filter {
                 }
                 if "_grokparsefailure" in [tags] {
                         drop { }
+                }
+        }
+}
+filter {
+        if "syslog" in [tags] {
+                if [syslog_program] == "haproxy" {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                        "message", "%{HAPROXYHTTP}",
+                                        "message", "%{HAPROXYTCP}"
+                                ]
+                                add_tag => [ "HAProxy" ]
+                        }
+                }
+        }
+}
+filter {
+        if "syslog" in [tags] {
+                if [syslog_program] =~ /Keepalived/ {
+                        mutate {
+                                add_tag => [ "KeepAliveD" ]
+                        }
                 }
         }
 }
