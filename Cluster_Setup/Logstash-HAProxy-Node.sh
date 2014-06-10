@@ -40,7 +40,7 @@ sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
 apt-get -qq update
 
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless git curl
+apt-get install -y --force-yes openjdk-7-jre-headless git curl nginx
 
 # Install Logstash
 cd /opt
@@ -144,6 +144,13 @@ echo "You entered ${red}$pfsensehostname${NC}"
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
 input {
+        file {
+                path => "/var/log/nginx/*access.log"
+                type => "nginx"
+                sincedb_path => "/var/log/.sincedb"
+        }
+}
+input {
         udp {
                 type => "syslog"
                 port => "514"
@@ -153,6 +160,9 @@ filter {
         if [type] == "syslog" {
                 dns {
                         reverse => [ "host" ] action => "replace"
+                }
+                mutate {
+                        add_tag => [ "syslog-UDP" ]
                 }
                 if [host] =~ /.*?(nsvpx).*?($yourdomainname)?/ {
                         mutate {
@@ -180,7 +190,6 @@ filter {
 }
 filter {
         if "syslog" in [tags] {
-
                 grok {
                         match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
                         add_field => [ "received_at", "%{@timestamp}" ]
@@ -201,6 +210,29 @@ filter {
                 }
                 if "_grokparsefailure" in [tags] {
                         drop { }
+                }
+        }
+}
+filter {
+        if "syslog" in [tags] {
+                if [syslog_program] == "haproxy" {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                        "message", "%{HAPROXYHTTP}",
+                                        "message", "%{HAPROXYTCP}"
+                                ]
+                                add_tag => [ "HAProxy" ]
+                        }
+                        geoip {
+                                source => "client_ip"
+                                target => "geoip"
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                        }
+                        mutate {
+                                convert => [ "[geoip][coordinates]", "float" ]
+                        }
                 }
         }
 }
@@ -298,12 +330,29 @@ filter {
                 }
         }
 }
+filter {
+        if [type] == "nginx" {
+                grok {
+                        pattern => "%{COMBINEDAPACHELOG}"
+                }
+        }
+}
 output {
-        elasticsearch {
-                cluster => "logstash-cluster"
-                flush_size => 1
-                manage_template => true
-                template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+        if [type] != "nginx" {
+                elasticsearch {
+                        cluster => "logstash-cluster"
+                        flush_size => 1
+                        manage_template => true
+                        template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+        }       }
+}
+output {
+        if [type] == "nginx" {
+                redis {
+                        host => "logstash"
+                        data_type => "list"
+                        key => "logstash"
+                }
         }
 }
 EOF
