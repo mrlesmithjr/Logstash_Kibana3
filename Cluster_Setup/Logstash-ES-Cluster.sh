@@ -115,7 +115,7 @@ EOF
 
 ##################### Logstash Front-End Setup ###########################################
 # Install Pre-Reqs
-apt-get install -y --force-yes ruby ruby1.9.1-dev libcurl4-openssl-dev apache2
+apt-get install -y --force-yes ruby ruby1.9.1-dev libcurl4-openssl-dev nginx
 
 # Install Redis-Server
 apt-get -y install redis-server
@@ -669,22 +669,18 @@ EOF
 service logstash restart
 
 # Install and configure Kibana3 frontend
-# This is in place seeing as Apache2 on Ubuntu 14.04 default website is no longer /var/www but instead /var/www/html. This allows for backwards compatability as well as forward compatability.
-if [ ! -d "/var/www/html" ]; then
-	mkdir /var/www/html
-fi
-cd /var/www/html
+cd /usr/share/nginx/html
 wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.1.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
-ln -s /var/www/html/kibana /var/www/kibana
-# Making the logstash dashboard the default
-mv /var/www/kibana/app/dashboards/default.json /var/www/kibana/app/dashboards/default.json.orig
-mv /var/www/kibana/app/dashboards/logstash.json /var/www/kibana/app/dashboards/default.json
 
-# Edit /var/www/html/kibana/config.js
-sed -i -e 's|elasticsearch: "http://"+window.location.hostname+":9200",|elasticsearch: "http://logstash:9200",|' /var/www/html/kibana/config.js
+# Making the logstash dashboard the default
+mv /usr/share/nginx/html/kibana/app/dashboards/default.json /usr/share/nginx/html/kibana/app/dashboards/default.json.orig
+mv /usr/share/nginx/html/kibana/app/dashboards/logstash.json /usr/share/nginx/html/kibana/app/dashboards/default.json
+
+# Edit /usr/share/nginx/html/kibana/config.js
+sed -i -e 's|elasticsearch: "http://"+window.location.hostname+":9200",|elasticsearch: "http://logstash:9200",|' /usr/share/nginx/html/kibana/config.js
 
 # Logrotate job for logstash
 tee -a /etc/logrotate.d/logstash <<EOF
