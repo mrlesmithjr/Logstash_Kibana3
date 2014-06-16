@@ -52,10 +52,12 @@ dpkg -i elasticsearch-1.1.1.deb
 # Configuring Elasticsearch
 echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.name: $yourhostname" >> /etc/elasticsearch/elasticsearch.yml
+echo "discovery.zen.ping.multicast.enabled: false" >> /etc/elasticsearch/elasticsearch.yml
+echo "discovery.zen.ping.unicast.hosts: ["127.0.0.1:[9300-9400]"]" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.master: true" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.data: true" >> /etc/elasticsearch/elasticsearch.yml
-echo "index.number_of_shards: 5" >> /etc/elasticsearch/elasticsearch.yml
-echo "index.number_of_replicas: 1" >> /etc/elasticsearch/elasticsearch.yml
+echo "index.number_of_shards: 1" >> /etc/elasticsearch/elasticsearch.yml
+echo "index.number_of_replicas: 0" >> /etc/elasticsearch/elasticsearch.yml
 echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
 
 # Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
