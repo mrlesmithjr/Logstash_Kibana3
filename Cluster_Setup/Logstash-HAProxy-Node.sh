@@ -145,9 +145,16 @@ mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
 input {
         file {
-                path => "/var/log/nginx/*access.log"
-                type => "nginx"
-                sincedb_path => "/var/log/.sincedb"
+                path => "/var/log/nginx/access.log"
+                type => "nginx-access"
+                sincedb_path => "/var/log/.nginxaccesssincedb"
+        }
+}
+input {
+        file {
+                path => "/var/log/nginx/error.log"
+                type => "nginx-error"
+                sincedb_path => "/var/log/.nginxerrorsincedb"
         }
 }
 input {
@@ -233,6 +240,18 @@ filter {
                         mutate {
                                 convert => [ "[geoip][coordinates]", "float" ]
                         }
+                        mutate {
+                                replace => [ "host", "%{@source_host}" ]
+                        }
+                        mutate {
+                                rename => [ "http_status_code", "response" ]
+                        }
+                        mutate {
+                                rename => [ "http_request", "request" ]
+                        }
+                        mutate {
+                                rename => [ "client_ip", "clientip" ]
+                        }
                 }
         }
 }
@@ -241,7 +260,7 @@ filter {
                 grok {
                         break_on_match => true
                         match => [
-                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:netscaler_client_ip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
+                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:clientip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
                                 "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message}"
                         ]
                 }
@@ -253,7 +272,7 @@ filter {
                         replace => [ "@message", "%{netscaler_message}" ]
                 }
                 geoip {
-                        source => "netscaler_client_ip"
+                        source => "clientip"
                         target => "geoip"
                         add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
                         add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
@@ -331,23 +350,25 @@ filter {
         }
 }
 filter {
-        if [type] == "nginx" {
+        if [type] =~ "nginx" {
                 grok {
                         pattern => "%{COMBINEDAPACHELOG}"
                 }
         }
 }
 output {
-        if [type] != "nginx" {
+        if [type] !~ "nginx" {
                 elasticsearch {
                         cluster => "logstash-cluster"
                         flush_size => 1
+                        template_overwrite => true
                         manage_template => true
                         template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
-        }       }
+                }
+        }
 }
 output {
-        if [type] == "nginx" {
+        if [type] =~ "nginx" {
                 redis {
                         host => "logstash"
                         data_type => "list"
@@ -355,6 +376,69 @@ output {
                 }
         }
 }
+EOF
+
+# Update elasticsearch-template for logstash
+mv /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json.orig
+tee -a /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json <<EOF
+{
+  "template" : "logstash-*",
+  "settings" : {
+    "index.refresh_interval" : "5s"
+  },
+  "mappings" : {
+    "_default_" : {
+       "_all" : {"enabled" : true},
+       "dynamic_templates" : [ {
+         "string_fields" : {
+           "match" : "*",
+           "match_mapping_type" : "string",
+           "mapping" : {
+             "type" : "string", "index" : "analyzed", "omit_norms" : true,
+               "fields" : {
+                 "raw" : {"type": "string", "index" : "not_analyzed", "ignore_above" : 256}
+               }
+           }
+         }
+       } ],
+       "properties" : {
+         "@version": { "type": "string", "index": "not_analyzed" },
+         "geoip"  : {
+           "type" : "object",
+             "dynamic": true,
+             "path": "full",
+             "properties" : {
+               "location" : { "type" : "geo_point" }
+             }
+         },
+        "actconn": { "type": "integer", "index": "not_analyzed" },
+        "backend_queue": { "type": "integer", "index": "not_analyzed" },
+        "beconn": { "type": "integer", "index": "not_analyzed" },
+        "bytes": { "type": "long", "index": "not_analyzed" },
+        "bytes_read": { "type": "long", "index": "not_analyzed" },
+        "datastore_latency_from": { "type": "long", "index": "not_analyzed" },
+        "datastore_latency_to": { "type": "long", "index": "not_analyzed" },
+        "feconn": { "type": "integer", "index": "not_analyzed" },
+        "srv_queue": { "type": "integer", "index": "not_analyzed" },
+        "srvconn": { "type": "integer", "index": "not_analyzed" },
+        "time_backend_connect": { "type": "integer", "index": "not_analyzed" },
+        "time_backend_response": { "type": "long", "index": "not_analyzed" },
+        "time_duration": { "type": "long", "index": "not_analyzed" },
+        "time_queue": { "type": "integer", "index": "not_analyzed" },
+        "time_request": { "type": "integer", "index": "not_analyzed" }
+       }
+    }
+  }
+}
+EOF
+
+# Create IPTables Grok pattern
+tee -a /opt/logstash/patterns/IPTABLES <<EOF
+NETFILTERMAC %{COMMONMAC:dst_mac}:%{COMMONMAC:src_mac}:%{ETHTYPE:ethtype}
+ETHTYPE (?:(?:[A-Fa-f0-9]{2}):(?:[A-Fa-f0-9]{2}))
+IPTABLES1 (?:IN=%{WORD:in_device} OUT=(%{WORD:out_device})? MAC=%{NETFILTERMAC} SRC=%{IP:src_ip} DST=%{IP:dst_ip}.*(TTL=%{INT:ttl})?.*PROTO=%{WORD:proto}?.*SPT=%{INT:src_port}?.*DPT=%{INT:dst_port}?.*)
+IPTABLES2 (?:IN=%{WORD:in_device} OUT=(%{WORD:out_device})? MAC=%{NETFILTERMAC} SRC=%{IP:src_ip} DST=%{IP:dst_ip}.*(TTL=%{INT:ttl})?.*PROTO=%{INT:proto}?.*)
+IPTABLES (?:%{IPTABLES1}|%{IPTABLES2})
 EOF
 
 # Restart logstash service
@@ -378,7 +462,3 @@ echo "Installation has completed!!"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
 echo "${yellow}Enjoy!!!${NC}"
-
-
-
-
