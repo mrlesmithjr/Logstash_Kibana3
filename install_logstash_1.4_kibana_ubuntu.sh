@@ -711,7 +711,7 @@ output {
         elasticsearch {
                 cluster => "logstash-cluster"
                 flush_size => 1
-				overwrite_template => true
+		template_overwrite => true
                 manage_template => true
                 template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
         }
