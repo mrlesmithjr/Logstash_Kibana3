@@ -15,12 +15,15 @@ yellow="$(tput bold ; tput setaf 3)"
 NC="$(tput sgr0)"
 
 # Capture your FQDN Domain Name and IP Address
+echo "${yellow}Capturing your hostname${NC}"
+yourhostname=$(hostname)
 echo "${yellow}Capturing your domain name${NC}"
 yourdomainname=$(dnsdomainname)
 echo "${yellow}Capturing your FQDN${NC}"
 yourfqdn=$(hostname -f)
 echo "${yellow}Detecting IP Address${NC}"
 IPADDY="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+echo "Your hostname is currently ${red}$yourhostname${NC}"
 echo "Your domain name is currently ${red}$yourdomainname${NC}"
 echo "Your FQDN is currently ${red}$yourfqdn${NC}"
 echo "Detected IP Address is ${red}$IPADDY${NC}"
@@ -708,8 +711,8 @@ filter {
         }
 }
 output {
-        elasticsearch {
-                cluster => "logstash-cluster"
+        elasticsearch_http {
+                host => "127.0.0.1"
                 flush_size => 1
 		template_overwrite => true
                 manage_template => true
