@@ -297,9 +297,19 @@ filter {
                         add_tag => [ "WindowsEventLog" ]
                 }
         }
+        if [type] == "apache" {
+                mutate {
+                       add_tag => [ "apache" ]
+                }
+        }
+        if [type] =~ "nginx" {
+                mutate {
+                        add_tag => [ "nginx" ]
+                }
+        }
         if [type] == "iis" {
                 mutate {
-                        add_tag => [ "IISLogs" ]
+                        add_tag => [ "IIS" ]
                 }
         }
 }
@@ -326,6 +336,25 @@ filter {
                 if "_grokparsefailure" in [tags] {
                         drop { }
                 }
+                if "IPTables" in [message] {
+                        grok {
+                                break_on_match => false
+                                match => { "message" => "%{IPTABLES}"}
+                                patterns_dir => [ "/opt/logstash/patterns" ]
+                        }
+                        mutate {
+                                add_tag => [ "IPTABLES" ]
+                        }
+                        geoip {
+                                source => "src_ip"
+                                target => "geoip"
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                        }
+                        mutate {
+                                convert => [ "[geoip][coordinates]", "float" ]
+                        }
+                }
         }
 }
 filter {
@@ -338,6 +367,27 @@ filter {
                                         "message", "%{HAPROXYTCP}"
                                 ]
                                 add_tag => [ "HAProxy" ]
+                        }
+                        geoip {
+                                source => "client_ip"
+                                target => "geoip"
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                        }
+                        mutate {
+                                convert => [ "[geoip][coordinates]", "float" ]
+                        }
+                        mutate {
+                                replace => [ "host", "%{@source_host}" ]
+                        }
+                        mutate {
+                                rename => [ "http_status_code", "response" ]
+                        }
+                        mutate {
+                                rename => [ "http_request", "request" ]
+                        }
+                        mutate {
+                                rename => [ "client_ip", "clientip" ]
                         }
                 }
         }
@@ -370,8 +420,10 @@ filter {
                 }
                 if "Device naa" in [message] {
                         grok {
+                                break_on_match => false
                                 match => [
-                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}"
+                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}%{GREEDYDATA} of %{INT:datastore_latency_from}%{GREEDYDATA} to %{INT:datastore_latency_to}",
+                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}%{GREEDYDATA} from %{INT:datastore_latency_from}%{GREEDYDATA} to %{INT:datastore_latency_to}"
                                 ]
                         }
                 }
@@ -504,7 +556,7 @@ filter {
                 grok {
                         break_on_match => true
                         match => [
-                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:netscaler_client_ip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
+                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:clientip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
                                 "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message}"
                         ]
                 }
@@ -516,7 +568,7 @@ filter {
                         replace => [ "@message", "%{netscaler_message}" ]
                 }
                 geoip {
-                        source => "netscaler_client_ip"
+                        source => "clientip"
                         target => "geoip"
                         add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
                         add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
@@ -527,7 +579,7 @@ filter {
         }
 }
 filter {
-        if "apache" in [type] {
+        if [type] == "apache" {
                 geoip {
                         source => "clientip"
                         target => "geoip"
@@ -545,9 +597,6 @@ filter {
                 }
                 mutate {
                         rename => [ "verb" , "method" ]
-                }
-                mutate {
-                                add_tag => [ "apache" ]
                 }
                 grok {
                         match => [
@@ -557,7 +606,7 @@ filter {
         }
 }
 filter {
-        if "nginx" in [type] {
+        if [type] =~ "nginx" {
                 geoip {
                         source => "clientip"
                         target => "geoip"
@@ -575,9 +624,6 @@ filter {
                 }
                 mutate {
                         rename => [ "verb" , "method" ]
-                }
-                mutate {
-                                add_tag => [ "nginx" ]
                 }
                 grok {
                         match => [
@@ -648,13 +694,6 @@ filter {
                 }
         }
 }
-filter {
-        if [type] == "mysql-slowquery" {
-                mutate {
-                        add_tag => [ "Mysql" ]
-                }
-        }
-}
 output {
         elasticsearch {
                 cluster => "logstash-cluster"
@@ -663,6 +702,69 @@ output {
                 template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
         }
 }
+EOF
+
+# Update elasticsearch-template for logstash
+mv /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json.orig
+tee -a /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json <<EOF
+{
+  "template" : "logstash-*",
+  "settings" : {
+    "index.refresh_interval" : "5s"
+  },
+  "mappings" : {
+    "_default_" : {
+       "_all" : {"enabled" : true},
+       "dynamic_templates" : [ {
+         "string_fields" : {
+           "match" : "*",
+           "match_mapping_type" : "string",
+           "mapping" : {
+             "type" : "string", "index" : "analyzed", "omit_norms" : true,
+               "fields" : {
+                 "raw" : {"type": "string", "index" : "not_analyzed", "ignore_above" : 256}
+               }
+           }
+         }
+       } ],
+       "properties" : {
+         "@version": { "type": "string", "index": "not_analyzed" },
+         "geoip"  : {
+           "type" : "object",
+             "dynamic": true,
+             "path": "full",
+             "properties" : {
+               "location" : { "type" : "geo_point" }
+             }
+         },
+        "actconn": { "type": "integer", "index": "not_analyzed" },
+        "backend_queue": { "type": "integer", "index": "not_analyzed" },
+        "beconn": { "type": "integer", "index": "not_analyzed" },
+        "bytes": { "type": "long", "index": "not_analyzed" },
+        "bytes_read": { "type": "long", "index": "not_analyzed" },
+        "datastore_latency_from": { "type": "long", "index": "not_analyzed" },
+        "datastore_latency_to": { "type": "long", "index": "not_analyzed" },
+        "feconn": { "type": "integer", "index": "not_analyzed" },
+        "srv_queue": { "type": "integer", "index": "not_analyzed" },
+        "srvconn": { "type": "integer", "index": "not_analyzed" },
+        "time_backend_connect": { "type": "integer", "index": "not_analyzed" },
+        "time_backend_response": { "type": "long", "index": "not_analyzed" },
+        "time_duration": { "type": "long", "index": "not_analyzed" },
+        "time_queue": { "type": "integer", "index": "not_analyzed" },
+        "time_request": { "type": "integer", "index": "not_analyzed" }
+       }
+    }
+  }
+}
+EOF
+
+# Create IPTables Grok pattern
+tee -a /opt/logstash/patterns/IPTABLES <<EOF
+NETFILTERMAC %{COMMONMAC:dst_mac}:%{COMMONMAC:src_mac}:%{ETHTYPE:ethtype}
+ETHTYPE (?:(?:[A-Fa-f0-9]{2}):(?:[A-Fa-f0-9]{2}))
+IPTABLES1 (?:IN=%{WORD:in_device} OUT=(%{WORD:out_device})? MAC=%{NETFILTERMAC} SRC=%{IP:src_ip} DST=%{IP:dst_ip}.*(TTL=%{INT:ttl})?.*PROTO=%{WORD:proto}?.*SPT=%{INT:src_port}?.*DPT=%{INT:dst_port}?.*)
+IPTABLES2 (?:IN=%{WORD:in_device} OUT=(%{WORD:out_device})? MAC=%{NETFILTERMAC} SRC=%{IP:src_ip} DST=%{IP:dst_ip}.*(TTL=%{INT:ttl})?.*PROTO=%{INT:proto}?.*)
+IPTABLES (?:%{IPTABLES1}|%{IPTABLES2})
 EOF
 
 # Restart logstash service
