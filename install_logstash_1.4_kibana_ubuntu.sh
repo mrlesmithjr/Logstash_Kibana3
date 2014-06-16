@@ -31,7 +31,7 @@ sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
 apt-get -qq update
 
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless ruby ruby1.9.1-dev libcurl4-openssl-dev git apache2 curl
+apt-get install -y --force-yes openjdk-7-jre-headless ruby ruby1.9.1-dev libcurl4-openssl-dev git nginx curl
 
 # Install Redis-Server
 apt-get -y install redis-server
@@ -47,15 +47,13 @@ wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearc
 dpkg -i elasticsearch-1.1.1.deb
 
 # Configuring Elasticsearch
-sed -i '$a\cluster.name: default-cluster' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.name: "elastic-master"' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\discovery.zen.ping.multicast.enabled: false' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\discovery.zen.ping.unicast.hosts: ["127.0.0.1:[9300-9400]"]' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.master: true' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\node.data: true' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\index.number_of_shards: 1' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\index.number_of_replicas: 0' /etc/elasticsearch/elasticsearch.yml
-sed -i '$a\bootstrap.mlockall: true' /etc/elasticsearch/elasticsearch.yml
+echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.name: $yourhostname" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.master: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.data: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "index.number_of_shards: 5" >> /etc/elasticsearch/elasticsearch.yml
+echo "index.number_of_replicas: 1" >> /etc/elasticsearch/elasticsearch.yml
+echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
 
 # Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
 mv /etc/security/limits.conf /etc/security/limits.bak
@@ -73,6 +71,16 @@ service elasticsearch restart
 # Install ElasticHQ Plugin to view Elasticsearch Cluster Details http://elastichq.org
 # To view these stats connect to http://logstashFQDNorIP:9200/_plugin/HQ/
 /usr/share/elasticsearch/bin/plugin -install royrusso/elasticsearch-HQ
+
+# Install elasticsearch Marvel Plugin Details http://www.elasticsearch.org/overview/marvel/
+# To view these stats connect to http://logstashFQDNorIP:9200/_plugin/marvel
+/usr/share/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+# Install other elasticsearch plugins
+# To view paramedic connect to http://logstashFQDNorIP:9200/_plugin/paramedic/index.html
+/usr/share/elasticsearch/bin/plugin -install karmi/elasticsearch-paramedic
+# To view elasticsearch head connect to http://logstashFQDNorIP:9200/_plugin/head/index.html
+/usr/share/elasticsearch/bin/plugin -install mobz/elasticsearch-head
 
 # Install Logstash
 cd /opt
@@ -166,16 +174,6 @@ echo "(example - yourcompany.com)"
 echo -n "Enter your domain name and press enter: "
 read yourdomainname
 echo "You entered ${red}$yourdomainname${NC}"
-echo "ESXi host name or naming convention: (example:esxi|esx|other - Only enter common naming)"
-echo "(example - esxi01,esxi02, etc. - Only enter esxi)"
-echo -n "Enter ESXi host naming convention and press enter: "
-read esxinaming
-echo "You entered ${red}$esxinaming${NC}"
-echo "VMware vCenter host name or naming convention: (example:vcenter|vcsa|other - Only enter common naming)"
-echo "(example - vc01,vc02, etc. - Only enter vc)"
-echo -n "Enter vCenter host naming convention and press enter: "
-read vcenternaming
-echo "You entered ${red}$vcenternaming${NC}"
 echo "Now enter your PFSense Firewall hostname if you use it ${red}(DO NOT include your domain name)${NC}"
 echo "If you do not use PFSense Firewall enter ${red}pfsense${NC}"
 echo -n "Enter PFSense Hostname: "
@@ -185,6 +183,20 @@ echo "You entered ${red}$pfsensehostname${NC}"
 # Create Logstash configuration file
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
+input {
+        file {
+                path => "/var/log/nginx/access.log"
+                type => "nginx-access"
+                sincedb_path => "/var/log/.nginxaccesssincedb"
+        }
+}
+input {
+        file {
+                path => "/var/log/nginx/error.log"
+                type => "nginx-error"
+                sincedb_path => "/var/log/.nginxerrorsincedb"
+        }
+}
 input {
   redis {
     host => "127.0.0.1"
@@ -196,6 +208,36 @@ input {
         udp {
                 type => "syslog"
                 port => "514"
+        }
+}
+input {
+        tcp {
+                type => "syslog"
+                port => "514"
+        }
+}
+input {
+        tcp {
+                type => "VMware"
+                port => "1514"
+        }
+}
+input {
+        tcp {
+                type => "vCenter"
+                port => "1515"
+        }
+}
+input {
+        tcp {
+                type => "PFsense"
+                port => "1516"
+        }
+}
+input {
+        tcp {
+                type => "Netscaler"
+                port => "1517"
         }
 }
 input {
@@ -227,32 +269,52 @@ filter {
                                 add_tag => [ "PFSense", "Ready" ]
                         }
                 }
-                if [host] =~ /.*?($esxinaming).*?($yourdomainname)?/ {
-                        mutate {
-                                add_tag => [ "VMware", "Ready" ]
-                        }
-                }
-                if [host] =~ /.*?($vcenternaming).*?($yourdomainname)?/ {
-                        mutate {
-                                add_tag => [ "vCenter", "Ready" ]
-                        }
-                }
                 if "Ready" not in [tags] {
                         mutate {
                                 add_tag => [ "syslog" ]
                         }
                 }
-        }
-        if [type] == "eventlog" {
-                mutate {
-                        add_tag => [ "WindowsEventLog" ]
-                }
-        }
-        if [type] == "iis" {
-                mutate {
-                        add_tag => [ "IISLogs" ]
-                }
-        }
+				if [type] == "VMware" {
+					mutate {
+                        add_tag => "VMware"
+					}
+				}
+				if [type] == "vCenter" {
+						mutate {
+								add_tag => "vCenter"
+						}
+				}
+				if [type] == "PFsense" {
+						mutate {
+								add_tag => "PFsense"
+						}
+				}
+				if [type] == "Netscaler" {
+						mutate {
+								add_tag => "Netscaler"
+						}
+				}
+				if [type] == "eventlog" {
+						mutate {
+								add_tag => [ "WindowsEventLog" ]
+						}
+				}
+				if [type] == "apache" {
+						mutate {
+							   add_tag => [ "apache" ]
+						}
+				}
+				if [type] =~ "nginx" {
+						mutate {
+								add_tag => [ "nginx" ]
+						}
+				}
+				if [type] == "iis" {
+						mutate {
+								add_tag => [ "IIS" ]
+						}
+				}
+		}
 }
 filter {
         if [type] == "syslog" {
@@ -263,7 +325,6 @@ filter {
 }
 filter {
         if "syslog" in [tags] {
-
                 grok {
                         match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
                         add_field => [ "received_at", "%{@timestamp}" ]
@@ -284,6 +345,69 @@ filter {
                 }
                 if "_grokparsefailure" in [tags] {
                         drop { }
+                }
+                if "IPTables" in [message] {
+                        grok {
+                                break_on_match => false
+                                match => { "message" => "%{IPTABLES}"}
+                                patterns_dir => [ "/opt/logstash/patterns" ]
+                        }
+                        mutate {
+                                add_tag => [ "IPTABLES" ]
+                        }
+                        geoip {
+                                source => "src_ip"
+                                target => "geoip"
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                        }
+                        mutate {
+                                convert => [ "[geoip][coordinates]", "float" ]
+                        }
+                }
+        }
+}
+filter {
+        if "syslog" in [tags] {
+                if [syslog_program] == "haproxy" {
+                        grok {
+                                break_on_match => false
+                                match => [
+                                        "message", "%{HAPROXYHTTP}",
+                                        "message", "%{HAPROXYTCP}"
+                                ]
+                                add_tag => [ "HAProxy" ]
+                        }
+                        geoip {
+                                source => "client_ip"
+                                target => "geoip"
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                                add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                        }
+                        mutate {
+                                convert => [ "[geoip][coordinates]", "float" ]
+                        }
+                        mutate {
+                                replace => [ "host", "%{@source_host}" ]
+                        }
+                        mutate {
+                                rename => [ "http_status_code", "response" ]
+                        }
+                        mutate {
+                                rename => [ "http_request", "request" ]
+                        }
+                        mutate {
+                                rename => [ "client_ip", "clientip" ]
+                        }
+                }
+        }
+}
+filter {
+        if "syslog" in [tags] {
+                if [syslog_program] =~ /Keepalived/ {
+                        mutate {
+                                add_tag => [ "KeepAliveD" ]
+                        }
                 }
         }
 }
@@ -306,8 +430,10 @@ filter {
                 }
                 if "Device naa" in [message] {
                         grok {
+                                break_on_match => false
                                 match => [
-                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}"
+                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}%{GREEDYDATA} of %{INT:datastore_latency_from}%{GREEDYDATA} to %{INT:datastore_latency_to}",
+                                        "message", "Device naa.%{WORD:device_naa} performance has %{WORD:device_status}%{GREEDYDATA} from %{INT:datastore_latency_from}%{GREEDYDATA} to %{INT:datastore_latency_to}"
                                 ]
                         }
                 }
@@ -332,7 +458,7 @@ filter {
                                 break_on_match => false
                                 match => [
                                         "message", "<%{POSINT:syslog_pri}>%{DATA:message_system_info}, (?<message-body>(%{SYSLOGHOST:hostname} %{SYSLOGPROG:message_program}: %{GREEDYDATA:message-syslog}))",
-                                        "message", "${GREEDYDATA:message-syslog}"
+                                        "message", ""
                                 ]
                         }
                 }
@@ -343,9 +469,9 @@ filter {
                 grok {
                         break_on_match => false
                         match => [
-                                "message", "%{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
-                                "message", "%{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
-                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:@timestamp} %{GREEDYDATA:message-syslog}"
+                                "message", "<%{INT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:syslog_source} %{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) \[%{DATA:message_service_info}]\ (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{INT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:syslog_source} %{TIMESTAMP_ISO8601:@timestamp} (?<message-body>(?<message_system_info>(?:\[%{DATA:message_thread_id} %{DATA:syslog_level} \'%{DATA:message_service}\'\ ?%{DATA:message_opID}])) (?<message-syslog>(%{GREEDYDATA})))",
+                                "message", "<%{INT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:syslog_source} %{TIMESTAMP_ISO8601:@timestamp} %{GREEDYDATA:message-syslog}"
                         ]
                 }
 
@@ -353,14 +479,14 @@ filter {
                         grok {
                                 break_on_match => false
                                 match => [
-                                        "message", "${GREEDYDATA:message-syslog}"
+                                        "message", ""
                                 ]
                         }
                 }
                 syslog_pri { }
                 mutate {
                         replace => [ "@message", "%{message-syslog}" ]
-                        rename => [ "host", "@source_host" ]
+                        rename => [ "syslog_source", "@source_host" ]
                         rename => [ "hostname", "syslog_source-hostname" ]
                         rename => [ "program", "message_program" ]
                         rename => [ "message_vce_server", "syslog_source-hostname" ]
@@ -440,7 +566,7 @@ filter {
                 grok {
                         break_on_match => true
                         match => [
-                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:netscaler_client_ip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
+                                "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message} : %{DATA} %{INT:netscaler_spcbid} - %{DATA} %{IP:clientip} - %{DATA} %{INT:netscaler_client_port} - %{DATA} %{IP:netscaler_vserver_ip} - %{DATA} %{INT:netscaler_vserver_port} %{GREEDYDATA:netscaler_message} - %{DATA} %{WORD:netscaler_session_type}",
                                 "message", "<%{POSINT:syslog_pri}> %{DATE_US}:%{TIME} GMT %{SYSLOGHOST:syslog_hostname} %{GREEDYDATA:netscaler_message}"
                         ]
                 }
@@ -452,7 +578,7 @@ filter {
                         replace => [ "@message", "%{netscaler_message}" ]
                 }
                 geoip {
-                        source => "netscaler_client_ip"
+                        source => "clientip"
                         target => "geoip"
                         add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
                         add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
@@ -463,7 +589,7 @@ filter {
         }
 }
 filter {
-        if "apache" in [type] {
+        if [type] == "apache" {
                 geoip {
                         source => "clientip"
                         target => "geoip"
@@ -482,8 +608,35 @@ filter {
                 mutate {
                         rename => [ "verb" , "method" ]
                 }
+                grok {
+                        match => [
+                                "message", "%{DATA:apache_vhost} "
+                        ]
+                }
+        }
+}
+filter {
+        if [type] =~ "nginx" {
+				grok {
+                        pattern => "%{COMBINEDAPACHELOG}"
+                }
+				geoip {
+                        source => "clientip"
+                        target => "geoip"
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][longitude]}" ]
+                        add_field => [ "[geoip][coordinates]", "%{[geoip][latitude]}"  ]
+                }
                 mutate {
-                                add_tag => [ "apache" ]
+                        convert => [ "[geoip][coordinates]", "float" ]
+                }
+                mutate {
+                        replace => [ "@source_host", "%{host}" ]
+                }
+                mutate {
+                        replace => [ "@message", "%{message}" ]
+                }
+                mutate {
+                        rename => [ "verb" , "method" ]
                 }
                 grok {
                         match => [
@@ -554,40 +707,93 @@ filter {
                 }
         }
 }
-filter {
-        if [type] == "mysql-slowquery" {
-                mutate {
-                        add_tag => [ "Mysql" ]
-                }
-        }
-}
 output {
-        elasticsearch_http {
-                host => "127.0.0.1"
+        elasticsearch {
+                cluster => "logstash-cluster"
                 flush_size => 1
+				overwrite_template => true
                 manage_template => true
                 template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
         }
 }
 EOF
 
-# Restart rsyslog service
-service rsyslog restart
+# Update elasticsearch-template for logstash
+mv /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json.orig
+tee -a /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json <<EOF
+{
+  "template" : "logstash-*",
+  "settings" : {
+    "index.refresh_interval" : "5s"
+  },
+  "mappings" : {
+    "_default_" : {
+       "_all" : {"enabled" : true},
+       "dynamic_templates" : [ {
+         "string_fields" : {
+           "match" : "*",
+           "match_mapping_type" : "string",
+           "mapping" : {
+             "type" : "string", "index" : "analyzed", "omit_norms" : true,
+               "fields" : {
+                 "raw" : {"type": "string", "index" : "not_analyzed", "ignore_above" : 256}
+               }
+           }
+         }
+       } ],
+       "properties" : {
+         "@version": { "type": "string", "index": "not_analyzed" },
+         "geoip"  : {
+           "type" : "object",
+             "dynamic": true,
+             "path": "full",
+             "properties" : {
+               "location" : { "type" : "geo_point" }
+             }
+         },
+        "actconn": { "type": "integer", "index": "not_analyzed" },
+        "backend_queue": { "type": "integer", "index": "not_analyzed" },
+        "beconn": { "type": "integer", "index": "not_analyzed" },
+        "bytes": { "type": "long", "index": "not_analyzed" },
+        "bytes_read": { "type": "long", "index": "not_analyzed" },
+        "datastore_latency_from": { "type": "long", "index": "not_analyzed" },
+        "datastore_latency_to": { "type": "long", "index": "not_analyzed" },
+        "feconn": { "type": "integer", "index": "not_analyzed" },
+        "srv_queue": { "type": "integer", "index": "not_analyzed" },
+        "srvconn": { "type": "integer", "index": "not_analyzed" },
+        "time_backend_connect": { "type": "integer", "index": "not_analyzed" },
+        "time_backend_response": { "type": "long", "index": "not_analyzed" },
+        "time_duration": { "type": "long", "index": "not_analyzed" },
+        "time_queue": { "type": "integer", "index": "not_analyzed" },
+        "time_request": { "type": "integer", "index": "not_analyzed" }
+       }
+    }
+  }
+}
+EOF
+
+# Create IPTables Grok pattern
+tee -a /opt/logstash/patterns/IPTABLES <<EOF
+NETFILTERMAC %{COMMONMAC:dst_mac}:%{COMMONMAC:src_mac}:%{ETHTYPE:ethtype}
+ETHTYPE (?:(?:[A-Fa-f0-9]{2}):(?:[A-Fa-f0-9]{2}))
+IPTABLES1 (?:IN=%{WORD:in_device} OUT=(%{WORD:out_device})? MAC=%{NETFILTERMAC} SRC=%{IP:src_ip} DST=%{IP:dst_ip}.*(TTL=%{INT:ttl})?.*PROTO=%{WORD:proto}?.*SPT=%{INT:src_port}?.*DPT=%{INT:dst_port}?.*)
+IPTABLES2 (?:IN=%{WORD:in_device} OUT=(%{WORD:out_device})? MAC=%{NETFILTERMAC} SRC=%{IP:src_ip} DST=%{IP:dst_ip}.*(TTL=%{INT:ttl})?.*PROTO=%{INT:proto}?.*)
+IPTABLES (?:%{IPTABLES1}|%{IPTABLES2})
+EOF
 
 # Restart logstash service
 service logstash restart
 
 # Install and configure Kibana3 frontend
-# This is in place seeing as Apache2 on Ubuntu 14.04 default website is no longer /var/www but instead /var/www/html. This allows for backwards compatability as well as forward compatability.
-if [ ! -d "/var/www/html" ]; then
-	mkdir /var/www/html
-fi
-cd /var/www/html
+cd /usr/share/nginx/html
 wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.1.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
-ln -s /var/www/html/kibana /var/www/kibana
+
+# Making the logstash dashboard the default
+mv /usr/share/nginx/html/kibana/app/dashboards/default.json /usr/share/nginx/html/kibana/app/dashboards/default.json.orig
+mv /usr/share/nginx/html/kibana/app/dashboards/logstash.json /usr/share/nginx/html/kibana/app/dashboards/default.json
 
 # Install elasticsearch curator http://www.elasticsearch.org/blog/curator-tending-your-time-series-indices/
 apt-get -y install python-pip
