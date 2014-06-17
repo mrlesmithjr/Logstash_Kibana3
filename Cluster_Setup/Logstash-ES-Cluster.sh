@@ -362,6 +362,15 @@ filter {
         }
 }
 filter {
+        if "IPTABLES" in [tags] {
+                grok {
+                        match => [
+                                "message", "IPTables-%{WORD:iptables_action}"
+                        ]
+                }
+        }
+}
+filter {
         if "syslog" in [tags] {
                 if [syslog_program] == "haproxy" {
                         grok {
@@ -673,9 +682,11 @@ filter {
                                 drop {}
                 }
                 grok {
+                	break_on_match => false
                         match => [
                                 "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}",
-                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{GREEDYDATA:syslog_message}"
+                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{GREEDYDATA:syslog_message}",
+                                "message", "%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}"
                         ]
                 }
                 date {
