@@ -351,10 +351,14 @@ filter {
                 if "_grokparsefailure" in [tags] {
                         drop { }
                 }
+        }
+}
+filter {
+        if "syslog" in [tags] {
                 if "IPTables" in [message] {
                         grok {
                                 break_on_match => false
-                                match => { "message" => "%{IPTABLES}"}
+                                match => { "message" => "%{IPTABLES}" }
                                 patterns_dir => [ "/opt/logstash/patterns" ]
                         }
                         mutate {
