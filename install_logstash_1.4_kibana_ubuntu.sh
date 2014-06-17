@@ -710,18 +710,14 @@ filter {
                                 drop {}
                 }
                 grok {
-                	break_on_match => false
                         match => [
-                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}",
-                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{WORD:servername} %{GREEDYDATA:syslog_message}",
-                                "message", "%{SYSLOGTIMESTAMP} %{WORD:servername} %{TIMESTAMP_ISO8601} %{IP:hostip} %{WORD:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:param}|-) %{IPORHOST:clientip} %{NOTSPACE:agent} %{NUMBER:response} %{NUMBER:subresponse} %{NUMBER:bytes} %{NUMBER:time-taken}"
+                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{TIMESTAMP_ISO8601:eventtime} %{IP:hostip} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
+                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:eventtime} %{IPORHOST:hostname} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
+                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{GREEDYDATA:message}"
                         ]
                 }
-                date {
-                         match => ["eventtime", "YY-MM-dd HH:mm:ss"]
-                }
                 mutate {
-                        replace => [ "@source_host", "%{servername}" ]
+                        replace => [ "@source_host", "%{hostname}" ]
                 }
                 mutate {
                         replace => [ "@message", "%{message}" ]
@@ -789,6 +785,7 @@ tee -a /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.j
         "datastore_latency_from": { "type": "long", "index": "not_analyzed" },
         "datastore_latency_to": { "type": "long", "index": "not_analyzed" },
         "feconn": { "type": "integer", "index": "not_analyzed" },
+        "response_time": { "type": "long", "index": "not_analyzed" },
         "srv_queue": { "type": "integer", "index": "not_analyzed" },
         "srvconn": { "type": "integer", "index": "not_analyzed" },
         "time_backend_connect": { "type": "integer", "index": "not_analyzed" },
