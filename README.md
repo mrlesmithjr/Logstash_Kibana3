@@ -14,8 +14,14 @@ For Logstash 1.4.x
 chmod +x ./Logstash_Kibana3/install_logstash_1.4_kibana_ubuntu.sh
 sudo ./Logstash_Kibana3/install_logstash_1.4_kibana_ubuntu.sh
 
-Configure (r)syslog clients to send on udp/514
-Configure ESX(i) clients to send on tcp/514
+Setup syslog for devices as follows.
+Port List
+TCP/514 Syslog (Devices supporting TCP)
+UDP/514 Syslog (Devices that do not support TCP - Only use if absolutely necessary)
+TCP/1514 VMware ESXi
+TCP/1515 VMware vCenter (Windows install or appliance) (For Windows install use NXLog from below in device setup) (For appliance reference device setup below)
+TCP/3515 Windows Eventlog (Use NXLog from below in device setup)
+TCP/3525 Windows IIS Logs (Use NXLog from below in device setup)
 
 Visit Me
 --------
