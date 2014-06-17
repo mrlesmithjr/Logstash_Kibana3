@@ -357,7 +357,6 @@ filter {
         if "syslog" in [tags] {
                 if "IPTables" in [message] {
                         grok {
-                                break_on_match => false
                                 match => { "message" => "%{IPTABLES}" }
                                 patterns_dir => [ "/opt/logstash/patterns" ]
                         }
@@ -382,6 +381,17 @@ filter {
                         match => [
                                 "message", "IPTables-%{WORD:iptables_action}"
                         ]
+                }
+                grok {
+                        match => [
+                                "message", "PROTO=%{WORD:iptables_proto}"
+                        ]
+                }
+                mutate {
+                        remove_field => [ "proto" ]
+                }
+                mutate {
+                        rename => [ "iptables_proto", "proto" ]
                 }
         }
 }
