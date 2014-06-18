@@ -711,10 +711,13 @@ filter {
                 }
                 grok {
                         match => [
-                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{TIMESTAMP_ISO8601:eventtime} %{IP:hostip} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
-                                "message", "<%{POSINT:syslog_pri}>%{TIMESTAMP_ISO8601:eventtime} %{IPORHOST:hostname} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
-                                "message", "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{GREEDYDATA:message}"
+                                "message", "%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{TIMESTAMP_ISO8601:eventtime} %{IP:hostip} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
+                                "message", "%{TIMESTAMP_ISO8601:eventtime} %{IPORHOST:hostname} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
+                                "message", "%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{GREEDYDATA:message}"
                         ]
+                }
+		date {
+                        match => [ "EventTime ", "yyyy-MM-dd HH:mm:ss" ]
                 }
                 mutate {
                         replace => [ "@source_host", "%{hostname}" ]
