@@ -252,15 +252,15 @@ input {
 input {
         tcp {
                 type => "eventlog"
-                port => 3515
-                format => 'json'
+                port => "3515"
+                format => "json"
         }
 }
 input {
         tcp {
                 type => "iis"
-                port => 3525
-                format => 'json'
+                port => "3525"
+                codec => "json_lines"
         }
 }
 filter {
@@ -693,13 +693,12 @@ filter {
                 }
                 grok {
                         match => [
-                                "message", "%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{TIMESTAMP_ISO8601:eventtime} %{IP:hostip} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
-                                "message", "%{TIMESTAMP_ISO8601:eventtime} %{IPORHOST:hostname} %{URIPROTO:method} %{URIPATH:request} (?:%{NOTSPACE:query}|-) %{NUMBER:port} (?:%{NOTSPACE:username}|-) %{IP:clientip} %{NOTSPACE:user_agent} %{NOTSPACE:status} %{NOTSPACE:substatus} %{NOTSPACE:win32_status} %{NUMBER:response_time}",
-                                "message", "%{SYSLOGTIMESTAMP} %{IPORHOST:hostname} %{GREEDYDATA:message}"
+                                "message", "%{TIMESTAMP_ISO8601:logtime} %{IPORHOST:hostname} %{URIPROTO:cs_method} %{URIPATH:cs_stem} (?:%{NOTSPACE:cs_query}|-) %{NUMBER:src_port} %{NOTSPACE:cs_username} %{IP:clientip} %{NOTSPACE:cs_useragent} %{NUMBER:sc_status} %{NUMBER:sc_subresponse} %{NUMBER:sc_win32_status} %{NUMBER:timetaken}"
                         ]
                 }
-		date {
-                        match => [ "EventTime ", "yyyy-MM-dd HH:mm:ss" ]
+                date {
+                        match => [ "logtime", "YYYY-MM-dd HH:mm:ss" ]
+                        timezone => "UTC"
                 }
                 mutate {
                         replace => [ "@source_host", "%{hostname}" ]
@@ -715,6 +714,14 @@ filter {
                 }
                 mutate {
                         convert => [ "[geoip][coordinates]", "float" ]
+                }
+                mutate {
+                        rename => [ "cs_method", "method" ]
+                        rename => [ "cs_stem", "request" ]
+                        rename => [ "cs_useragent", "agent" ]
+                        rename => [ "cs_username", "username" ]
+                        rename => [ "sc_status", "response" ]
+                        rename => [ "timetaken", "time_request" ]
                 }
         }
 }
