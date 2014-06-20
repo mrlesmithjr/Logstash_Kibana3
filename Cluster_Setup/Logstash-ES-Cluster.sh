@@ -209,15 +209,49 @@ chmod +x /etc/init.d/logstash
 # Enable logstash start on bootup
 update-rc.d logstash defaults 96 04
 
+echo "Setting up logstash for different host type filtering"
+echo "Your domain name:"
+echo "(example - yourcompany.com)"
+echo -n "Enter your domain name and press enter: "
+read yourdomainname
+echo "You entered ${red}$yourdomainname${NC}"
+echo "Now enter your PFSense Firewall hostname if you use it ${red}(DO NOT include your domain name)${NC}"
+echo "If you do not use PFSense Firewall enter ${red}pfsense${NC}"
+echo -n "Enter PFSense Hostname: "
+read pfsensehostname
+echo "You entered ${red}$pfsensehostname${NC}"
+echo "Now enter your Citrix Netscaler naming scheme if you use it ${red}(DO NOT include your domain name)${NC}"
+echo "For example....Your Netscaler's are named nsvpx01, nsvpx02....Only enter nsvpx for the naming scheme"
+echo "If you do not use Citrix Netscaler's enter ${red}netscaler${NC}"
+echo -n "Enter Citrix Netscaler Naming scheme: "
+read netscalernaming
+echo "You entered ${red}$netscalernaming${NC}"
+
+
+
 # Create Logstash configuration file
 mkdir /etc/logstash
 tee -a /etc/logstash/logstash.conf <<EOF
 input {
-  redis {
-    host => "127.0.0.1"
-    data_type => "list"
-    key => "logstash"
-  }
+        file {
+                path => "/var/log/nginx/access.log"
+                type => "nginx-access"
+                sincedb_path => "/var/log/.nginxaccesssincedb"
+        }
+}
+input {
+        file {
+                path => "/var/log/nginx/error.log"
+                type => "nginx-error"
+                sincedb_path => "/var/log/.nginxerrorsincedb"
+        }
+}
+input {
+        redis {
+                host => "127.0.0.1"
+                data_type => "list"
+                key => "logstash"
+        }
 }
 input {
         tcp {
@@ -235,12 +269,6 @@ input {
         tcp {
                 type => "vCenter"
                 port => "1515"
-        }
-}
-input {
-        tcp {
-                type => "PFsense"
-                port => "1516"
         }
 }
 input {
@@ -269,7 +297,7 @@ filter {
                         reverse => [ "host" ] action => "replace"
                 }
                 mutate {
-                        add_tag => [ "syslog-TCP", "syslog" ]
+                        add_tag => [ "syslog" ]
                 }
         }
         if [type] == "VMware" {
@@ -314,6 +342,13 @@ filter {
         }
 }
 filter {
+        if [type] == "syslog" {
+                mutate {
+                        remove_tag => "Ready"
+                }
+        }
+}
+filter {
         if "syslog" in [tags] {
                 grok {
                         match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
@@ -326,15 +361,20 @@ filter {
                 }
                 if !("_grokparsefailure" in [tags]) {
                         mutate {
+                                replace => [ "host", "%{syslog_hostname}" ]
                                 replace => [ "@source_host", "%{syslog_hostname}" ]
                                 replace => [ "@message", "%{syslog_message}" ]
                         }
                 }
-                mutate {
-                        remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
+                if [syslog_hostname] =~ /.*?($netscalernaming).*?($yourdomainname)?/ {
+                        mutate {
+                                add_tag => [ "Netscaler" ]
+                        }
                 }
-                if "_grokparsefailure" in [tags] {
-                        drop { }
+                if [syslog_hostname] =~ /.*?($pfsensehostname).*?($yourdomainname)?/ {
+                        mutate {
+                                add_tag => [ "PFSense" ]
+                        }
                 }
         }
 }
@@ -523,10 +563,10 @@ filter {
             replace => [ "message", "%{msg}" ]
         }
         mutate {
-            remove_field => [ "msg", "datetime" ]
+            remove_field => [ "msg", "datetime", "prog" ]
         }
     }
-    if [prog] =~ /^pf$/ {
+    if [syslog_program] =~ /^pf$/ {
         mutate {
             add_tag => [ "packetfilter" ]
         }
@@ -539,10 +579,10 @@ filter {
             remove_tag => [ "multiline" ]
         }
         grok {
-            match => [ "message", "rule (?<rule>.*)\(.*\): (?<action>pass|block) .* on (?<iface>.*): .* proto (?<proto>TCP|UDP|IGMP|ICMP) .*\n\s*(?<src_ip>(\d+\.\d+\.\d+\.\d+))\.?(?<src_port>(\d*)) [<|>] (?<dest_ip>(\d+\.\d+\.\d+\.\d+))\.?(?<dest_port>(\d*)):" ]
+            match => [ "message", "rule (?<rule>.*)\(.*\): (?<action>pass|block) .* on (?<iface>.*): .* proto (?<proto>TCP|UDP|IGMP|ICMP) .*\n\s*(?<src_ip>(\d+\.\d+\.\d+\.\d+))\.?(?<src_port>(\d*)) [<|>] (?<dst_ip>(\d+\.\d+\.\d+\.\d+))\.?(?<dst_port>(\d*)):" ]
         }
     }
-    if [prog] =~ /^dhcpd$/ {
+    if [syslog_program] =~ /^dhcpd$/ {
         if [message] =~ /^DHCPACK|^DHCPREQUEST|^DHCPOFFER/ {
             grok {
                 match => [ "message", "(?<action>.*) (on|for|to) (?<src_ip>[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]\.[0-2]?[0-9]?[0-9]) .*(?<mac_address>[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F]).* via (?<iface>.*)" ]
@@ -567,10 +607,10 @@ filter {
 filter {
         if "PFSense" in [tags] {
                 mutate {
-                        replace => [ "@source_host", "%{host}" ]
+                        replace => [ "@source_host", "%{syslog_hostname}" ]
                 }
                 mutate {
-                        replace => [ "@message", "%{message}" ]
+                        replace => [ "@message", "%{syslog_message}" ]
                 }
         }
 }
@@ -603,6 +643,9 @@ filter {
 }
 filter {
         if [type] == "apache" {
+                grok {
+                        pattern => "%{COMBINEDAPACHELOG}"
+                }
                 geoip {
                         source => "clientip"
                         target => "geoip"
@@ -630,6 +673,9 @@ filter {
 }
 filter {
         if [type] =~ "nginx" {
+                grok {
+                        pattern => "%{COMBINEDAPACHELOG}"
+                }
                 geoip {
                         source => "clientip"
                         target => "geoip"
@@ -725,6 +771,21 @@ filter {
                 }
         }
 }
+filter {
+    if [type] == "mysql-slowquery" {
+                multiline {
+                        what => previous
+                        pattern => "^\s"
+                }
+                grok { pattern => "^%{NUMBER:date} *%{NOTSPACE:time}" }
+                mutate { replace => [ "time", "%{date} %{time}" ] }
+                date {
+                        match => [ "YYMMdd H:mm:ss", "YYMMdd HH:mm:ss" ]
+                }
+                mutate { remove => [ "time", "date" ] }
+                split { }
+        }
+}
 output {
         elasticsearch {
                 cluster => "logstash-cluster"
@@ -804,7 +865,7 @@ service logstash restart
 
 # Install and configure Kibana3 frontend
 cd /usr/share/nginx/html
-wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.1.tar.gz
+wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
