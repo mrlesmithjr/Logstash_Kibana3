@@ -823,7 +823,7 @@ service logstash restart
 
 # Install and configure Kibana3 frontend
 cd /usr/share/nginx/html
-wget https://download.elasticsearch.org/kibana/kibana/kibana-3.0.1.tar.gz
+wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
