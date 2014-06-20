@@ -52,9 +52,15 @@ echo "If running elasticsearch on this host....enter localhost or 127.0.0.1 "
 echo "If running elasticsearch on a separate host...enter hostname or IP of host "
 echo "If running elasticsearch as a highly available cluster behind a Load Balancer (Proxy)"
 echo "Enter VIP hostname or VIP IP...i.e. (logstash or 192.168.1.200) "
-echo -n "Enter elasticsearch info (as directed above) and press enter: "
+echo -n "Enter your elasticsearch info (as directed above) and press enter: "
 read esinfo
-
+echo "If you are using a Load Balancer in front of your Kibana nodes"
+echo "enter the VIP Hostname or VIP IP...i.e. (logstash or 192.168.1.200) "
+echo "This could also be the same as the information you entered for your elasticsearch VIP"
+echo "If you are not using a load balancer enter the following IP: " %{yellow}$IPADDY%{NC}
+echo -n "Enter your kibana info (as directed above) and press enter: "
+read kibanainfo
+echo "Enter the port number that your load balancer is configured to listen on to redirect
 # Create nginx-logstash website for nginx
 tee -a /etc/nginx/sites-available/nginx-logstash <<EOF
 # Nginx proxy for Elasticsearch + Kibana
@@ -68,10 +74,15 @@ tee -a /etc/nginx/sites-available/nginx-logstash <<EOF
 # If you use this, you'll want to point config.js at http://FQDN:80/ instead of
 # http://FQDN:9200
 #
+upstream lb_vip {
+        server $kibanainfo:8081;
+}
+
 server {
     listen      80;
     return 301 https://$IPADDY;
 }
+
 server {
   listen                *:443 ;
  
@@ -85,7 +96,7 @@ server {
   location / {
     root  /usr/share/nginx/html/kibana;
     index  index.html  index.htm;
- 
+    proxy_pass  http://lb_vip;
     auth_basic "Restricted";
     auth_basic_user_file /etc/nginx/conf.d/kibana.htpasswd;
  
