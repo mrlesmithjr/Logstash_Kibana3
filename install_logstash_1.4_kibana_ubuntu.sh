@@ -42,6 +42,14 @@ apt-get -y install redis-server
 sed -i -e 's|bind 127.0.0.1|bind 0.0.0.0|' /etc/redis/redis.conf
 service redis-server restart
 
+# Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
+# echo "Installing Oracle Java 7"
+# add-apt-repository -y ppa:webupd8team/java
+# apt-get -qq update
+# echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+# apt-get -y install oracle-java7-installer
+# apt-get -y install oracle-java8-installer oracle-java8-set-default
+
 # Install Elasticsearch
 cd /opt
 #wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-0.90.11.deb
