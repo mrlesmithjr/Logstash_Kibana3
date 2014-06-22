@@ -829,6 +829,12 @@ EOF
 # Restart logstash service
 service logstash restart
 
+# The below is required for Ubuntu 14.04 Desktop version as nginx sets root to /usr/share/nginx/wwww
+if [ ! -d "/usr/share/nginx/html" ]; then
+	mkdir /usr/share/nginx/html
+	sed -i -e 's|root /usr/share/nginx/www|root /usr/share/nginx/html|' /etc/nginx/sites-enabled/default
+fi
+
 # Install and configure Kibana3 frontend
 cd /usr/share/nginx/html
 wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
