@@ -3,8 +3,8 @@
 #Provided by @mrlesmithjr
 #EveryThingShouldBeVirtual.com
 
-# This script will install logstash to listen on UDP/514 and sort out some types of devices that do not support sending syslog to a TCP port.
-# Logstash will join the elasticsearch logstash-cluster as a client and output everything into the cluster
+# This script will configure rsyslog to listen on UDP/514 and sort out some types of devices that do not support sending syslog to a TCP port.
+# Logstash will send to the e elasticsearch logstash-cluster using redis
 # Install this script on your frontend HAProxy Nodes. Because all devices will point to the VIP of HAProxy only the active node will receive syslog messages
 # This will also support HAProxy cluster failover
 
@@ -41,6 +41,14 @@ apt-get -qq update
 
 # Install Pre-Reqs
 apt-get install -y --force-yes openjdk-7-jre-headless git curl nginx
+
+# Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
+# echo "Installing Oracle Java 7"
+# add-apt-repository -y ppa:webupd8team/java
+# apt-get -qq update
+# echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+# apt-get -y install oracle-java7-installer
+# apt-get -y install oracle-java8-installer oracle-java8-set-default
 
 # Install Logstash
 cd /opt
