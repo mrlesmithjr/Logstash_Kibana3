@@ -93,10 +93,10 @@ pip install elasticsearch-curator
 # Create /etc/cron.daily/elasticsearch_curator Cron Job
 tee -a /etc/cron.daily/elasticsearch_curator <<EOF
 #!/bin/sh
-/usr/local/bin/curator --host 127.0.0.1 delete 90
-/usr/local/bin/curator --host 127.0.0.1 close 30
-/usr/local/bin/curator --host 127.0.0.1 bloom 2
-/usr/local/bin/curator --host 127.0.0.1 optimize 2
+/usr/local/bin/curator --host 127.0.0.1 delete --older-than 90
+/usr/local/bin/curator --host 127.0.0.1 close --older-than 30
+/usr/local/bin/curator --host 127.0.0.1 bloom --older-than 2
+/usr/local/bin/curator --host 127.0.0.1 optimize --older-than 2
 
 # Email report
 #recipients="emailAdressToReceiveReport"
