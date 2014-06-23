@@ -3,11 +3,13 @@
 #Provided by @mrlesmithjr
 #EveryThingShouldBeVirtual.com
 
+# This script configures the node as a logstash processor, Elasticsearch client node in logstash-cluster
+
 set -e
 # Setup logging
 # Logs stderr and stdout to separate files.
-exec 2> >(tee "./Logstash_Kibana3/install_logstash_es_cluster_ubuntu.err")
-exec > >(tee "./Logstash_Kibana3/install_logstash_es_cluster_ubuntu.log")
+exec 2> >(tee "./Logstash_Kibana3/install_Logstash-ELK-ES-Cluster-client-node.err")
+exec > >(tee "./Logstash_Kibana3/install_Logstash-ELK-ES-Cluster-client-node.log")
 
 # Setting colors for output
 red="$(tput setaf 1)"
@@ -35,26 +37,27 @@ apt-get -qq update
 
 ############################### Logstash - Elasticsearch cluster Setup ##################################
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless git curl
+apt-get install -y --force-yes git curl software-properties-common
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
-# echo "Installing Oracle Java 7"
-# add-apt-repository -y ppa:webupd8team/java
-# apt-get -qq update
-# echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-# apt-get -y install oracle-java7-installer
-# apt-get -y install oracle-java8-installer oracle-java8-set-default
-
+echo "Installing Oracle Java 7"
+add-apt-repository -y ppa:webupd8team/java
+apt-get -qq update
+echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+oracle-java7-installer oracle-java7-set-default
+ 
 # Install Elasticsearch
 cd /opt
-wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
-dpkg -i elasticsearch-1.1.1.deb
+#wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
+#dpkg -i elasticsearch-1.1.1.deb
+wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
+dpkg -i elasticsearch-1.2.1.deb
 
 # Configuring Elasticsearch
 echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.name: $yourhostname" >> /etc/elasticsearch/elasticsearch.yml
-echo "node.master: true" >> /etc/elasticsearch/elasticsearch.yml
-echo "node.data: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.master: false" >> /etc/elasticsearch/elasticsearch.yml
+echo "node.data: false" >> /etc/elasticsearch/elasticsearch.yml
 echo "index.number_of_shards: 5" >> /etc/elasticsearch/elasticsearch.yml
 echo "index.number_of_replicas: 1" >> /etc/elasticsearch/elasticsearch.yml
 echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
@@ -87,25 +90,25 @@ service elasticsearch restart
 /usr/share/elasticsearch/bin/plugin -install mobz/elasticsearch-head
 
 # Install elasticsearch curator http://www.elasticsearch.org/blog/curator-tending-your-time-series-indices/
-apt-get -y install python-pip
-pip install elasticsearch-curator
+#apt-get -y install python-pip
+#pip install elasticsearch-curator
 
 # Create /etc/cron.daily/elasticsearch_curator Cron Job
-tee -a /etc/cron.daily/elasticsearch_curator <<EOF
+#tee -a /etc/cron.daily/elasticsearch_curator <<EOF
 #!/bin/sh
-/usr/local/bin/curator --host 127.0.0.1 delete --older-than 90
-/usr/local/bin/curator --host 127.0.0.1 close --older-than 30
-/usr/local/bin/curator --host 127.0.0.1 bloom --older-than 2
-/usr/local/bin/curator --host 127.0.0.1 optimize --older-than 2
+#/usr/local/bin/curator --host 127.0.0.1 delete --older-than 90
+#/usr/local/bin/curator --host 127.0.0.1 close --older-than 30
+#/usr/local/bin/curator --host 127.0.0.1 bloom --older-than 2
+#/usr/local/bin/curator --host 127.0.0.1 optimize --older-than 2
 
 # Email report
 #recipients="emailAdressToReceiveReport"
 #subject="Daily Elasticsearch Curator Job Report"
 #cat /var/log/elasticsearch_curator.log | mail -s $subject $recipients
-EOF
+#EOF
 
 # Make elasticsearch_curator executable
-chmod +x /etc/cron.daily/elasticsearch_curator
+#chmod +x /etc/cron.daily/elasticsearch_curator
 
 # Logrotate job for elasticsearch_curator
 tee -a /etc/logrotate.d/elasticsearch_curator <<EOF
@@ -234,8 +237,6 @@ echo "If you do not use Citrix Netscaler's enter ${red}netscaler${NC}"
 echo -n "Enter Citrix Netscaler Naming scheme: "
 read netscalernaming
 echo "You entered ${red}$netscalernaming${NC}"
-
-
 
 # Create Logstash configuration file
 mkdir /etc/logstash
@@ -870,6 +871,12 @@ EOF
 
 # Restart logstash service
 service logstash restart
+
+# The below is required for Ubuntu 14.04 Desktop version as nginx sets root to /usr/share/nginx/wwww
+if [ ! -d "/usr/share/nginx/html" ]; then
+	mkdir /usr/share/nginx/html
+	sed -i -e 's|root /usr/share/nginx/www|root /usr/share/nginx/html|' /etc/nginx/sites-enabled/default
+fi
 
 # Install and configure Kibana3 frontend
 cd /usr/share/nginx/html
