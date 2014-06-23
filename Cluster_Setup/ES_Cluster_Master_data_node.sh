@@ -8,8 +8,8 @@
 set -e
 # Setup logging
 # Logs stderr and stdout to separate files.
-exec 2> >(tee "./Logstash_Kibana3/install_logstash_es_cluster_ubuntu.err")
-exec > >(tee "./Logstash_Kibana3/install_logstash_es_cluster_ubuntu.log")
+exec 2> >(tee "./Logstash_Kibana3/install_logstash_es_cluster_master_data_ubuntu.err")
+exec > >(tee "./Logstash_Kibana3/install_logstash_es_cluster_master_data_ubuntu.log")
 
 # Setting colors for output
 red="$(tput setaf 1)"
@@ -37,14 +37,14 @@ apt-get -qq update
 
 ############################### Logstash - Elasticsearch cluster Setup ##################################
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless git curl software-properties-common
+apt-get install -y --force-yes git curl software-properties-common
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
-# echo "Installing Oracle Java 7"
-# add-apt-repository -y ppa:webupd8team/java
-# apt-get -qq update
-# echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-# oracle-java7-installer oracle-java7-set-default
+ echo "Installing Oracle Java 7"
+ add-apt-repository -y ppa:webupd8team/java
+ apt-get -qq update
+ echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+ oracle-java7-installer oracle-java7-set-default
 
 # Install Elasticsearch
 cd /opt
