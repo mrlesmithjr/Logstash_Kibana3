@@ -40,16 +40,15 @@ sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
 apt-get -qq update
 
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless git curl nginx
+apt-get install -y --force-yes git curl nginx software-properties-common
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
-# echo "Installing Oracle Java 7"
-# add-apt-repository -y ppa:webupd8team/java
-# apt-get -qq update
-# echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-# apt-get -y install oracle-java7-installer
-# apt-get -y install oracle-java8-installer oracle-java8-set-default
-
+ echo "Installing Oracle Java 7"
+ add-apt-repository -y ppa:webupd8team/java
+ apt-get -qq update
+ echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
+ oracle-java7-installer oracle-java7-set-default
+ 
 # Install Logstash
 cd /opt
 wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
