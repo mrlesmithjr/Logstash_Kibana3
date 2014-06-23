@@ -37,15 +37,14 @@ apt-get -qq update
 
 ############################### Logstash - Elasticsearch cluster Setup ##################################
 # Install Pre-Reqs
-apt-get install -y --force-yes openjdk-7-jre-headless git curl
+apt-get install -y --force-yes openjdk-7-jre-headless git curl software-properties-common
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
 # echo "Installing Oracle Java 7"
 # add-apt-repository -y ppa:webupd8team/java
 # apt-get -qq update
 # echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
-# apt-get -y install oracle-java7-installer
-# apt-get -y install oracle-java8-installer oracle-java8-set-default
+# oracle-java7-installer oracle-java7-set-default
 
 # Install Elasticsearch
 cd /opt
