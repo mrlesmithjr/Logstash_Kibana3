@@ -8,8 +8,8 @@
 set -e
 # Setup logging
 # Logs stderr and stdout to separate files.
-exec 2> >(tee "./Logstash_Kibana3/install_logstash_es_cluster_master_data_ubuntu.err")
-exec > >(tee "./Logstash_Kibana3/install_logstash_es_cluster_master_data_ubuntu.log")
+exec 2> >(tee "./Logstash_Kibana3/install_Logstash-ES-Cluster-Master-data-node.err")
+exec > >(tee "./Logstash_Kibana3/install_Logstash-ES-Cluster-Master-data-node.log")
 
 # Setting colors for output
 red="$(tput setaf 1)"
