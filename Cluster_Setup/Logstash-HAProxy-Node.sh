@@ -47,7 +47,7 @@ apt-get install -y --force-yes git curl nginx software-properties-common
  add-apt-repository -y ppa:webupd8team/java
  apt-get -qq update
  echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
- oracle-java7-installer oracle-java7-set-default
+ apt-get install -y oracle-java7-installer oracle-java7-set-default
  
 # Install Logstash
 cd /opt
