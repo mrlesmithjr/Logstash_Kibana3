@@ -54,6 +54,7 @@ wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearc
 dpkg -i elasticsearch-1.2.1.deb
 
 # Configuring Elasticsearch
+### Below is added using install script ###
 echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.name: $yourhostname" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.master: true" >> /etc/elasticsearch/elasticsearch.yml
@@ -65,8 +66,9 @@ echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
 # Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
 mv /etc/security/limits.conf /etc/security/limits.bak
 grep -Ev "# End of file" /etc/security/limits.bak > /etc/security/limits.conf
-echo "elasticsearch soft nofile 32000" >> /etc/security/limits.conf
-echo "elasticsearch hard nofile 32000" >> /etc/security/limits.conf
+echo "elasticsearch soft nofile 65536" >> /etc/security/limits.conf
+echo "elasticsearch hard nofile 65536" >> /etc/security/limits.conf
+echo "elasticsearch - memlock unlimited" >> /etc/security/limits.con
 echo "# End of file" >> /etc/security/limits.conf
 
 # Set Elasticsearch to start on boot
