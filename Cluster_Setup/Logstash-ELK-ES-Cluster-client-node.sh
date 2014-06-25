@@ -75,8 +75,8 @@ echo "elasticsearch - memlock unlimited" >> /etc/security/limits.conf
 echo "# End of file" >> /etc/security/limits.conf
 
 # Modify elasticsearch service for ulimit -l unlimited to allow mlockall to work correctly
-sed -i -e 's|^#ES_HEAP_SIZE=1g|ES_HEAP_SIZE=1g|' /etc/init.d/elasticsearch
-sed -i -e 's|^#MAX_LOCKED_MEMORY=|MAX_LOCKED_MEMORY=unlimited|' /etc/init.d/elasticsearch
+#sed -i -e 's|^#ES_HEAP_SIZE=1g|ES_HEAP_SIZE=1g|' /etc/init.d/elasticsearch
+#sed -i -e 's|^#MAX_LOCKED_MEMORY=|MAX_LOCKED_MEMORY=unlimited|' /etc/init.d/elasticsearch
 
 # Set Elasticsearch to start on boot
 sudo update-rc.d elasticsearch defaults 95 10
