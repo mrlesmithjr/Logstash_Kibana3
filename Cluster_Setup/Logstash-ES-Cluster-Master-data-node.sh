@@ -127,9 +127,7 @@ EOF
 
 # All Done
 echo "Installation has completed!!"
-echo -e "To connect to cluster connect to ${red}http://logstash/kibana${NC}"
-echo -e "To connect to individual host use the info below"
-echo -e "Connect to ${red}http://$yourfqdn/kibana${NC} or ${red}http://$IPADDY/kibana${NC}"
+echo "Now continue on and setup your ELK Frontend logstash processing nodes"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
 echo "${yellow}Enjoy!!!${NC}"
