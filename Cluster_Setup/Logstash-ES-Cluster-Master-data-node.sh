@@ -54,7 +54,7 @@ wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearc
 dpkg -i elasticsearch-1.2.1.deb
 
 # Configuring Elasticsearch
-### Below is added using install script ###
+echo "### Below is added using install script ###" >> /etc/elasticsearch/elasticsearch.yml
 echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.name: $yourhostname" >> /etc/elasticsearch/elasticsearch.yml
 echo "node.master: true" >> /etc/elasticsearch/elasticsearch.yml
@@ -62,6 +62,11 @@ echo "node.data: true" >> /etc/elasticsearch/elasticsearch.yml
 echo "index.number_of_shards: 5" >> /etc/elasticsearch/elasticsearch.yml
 echo "index.number_of_replicas: 1" >> /etc/elasticsearch/elasticsearch.yml
 echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "##### Change below instead of using multicast and update with your actual ES Master/Data nodenames #####" >> /etc/elasticsearch/elasticsearch.yml
+echo "#discovery.zen.ping.unicast.hosts: ["es-1", "es-2"]"
+echo "#discovery.zen.ping.multicast.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "#### Prevent split brain ES Cluster n/2+1 ####" >> /etc/elasticsearch/elasticsearch.yml
+echo "#discovery.zen.minimum_master_nodes: 1" >> /etc/elasticsearch/elasticsearch.yml
 
 # Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
 mv /etc/security/limits.conf /etc/security/limits.bak
@@ -70,6 +75,9 @@ echo "elasticsearch soft nofile 65536" >> /etc/security/limits.conf
 echo "elasticsearch hard nofile 65536" >> /etc/security/limits.conf
 echo "elasticsearch - memlock unlimited" >> /etc/security/limits.con
 echo "# End of file" >> /etc/security/limits.conf
+
+# Modify elasticsearch service for ulimit -l unlimited to allow mlockall to work correctly
+sed -i -e 's|^#MAX_LOCKED_MEMORY=|MAX_LOCKED_MEMORY=unlimited|' /etc/init.d/elasticsearch
 
 # Set Elasticsearch to start on boot
 sudo update-rc.d elasticsearch defaults 95 10
