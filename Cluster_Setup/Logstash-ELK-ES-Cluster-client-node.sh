@@ -892,10 +892,25 @@ filter {
         }
 }
 # Send output to the ES cluster logstash-cluster using a predefined template
+# The settings can be used for using multicast ES nodes
+# When changing to unicast you need to comment out the following section and 
+#output {
+#        elasticsearch {
+#                cluster => "logstash-cluster"
+#                flush_size => 1
+#                manage_template => true
+#                template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+#        }
+#}
+# Send output to the ES cluster logstash-cluster using a predefined template
+# The settings below will be used when you change to unicast mode for all ES nodes
 output {
         elasticsearch {
                 cluster => "logstash-cluster"
-                flush_size => 1
+                host => "logstash"
+                port => "9300"
+                protocol => "node"
+                flush_size => "1"
                 manage_template => true
                 template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
         }
