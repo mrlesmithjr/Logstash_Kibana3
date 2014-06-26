@@ -855,6 +855,11 @@ filter {
                         remove => [ "SourceModuleType", "EventTimeWritten", "EventTime", "EventReceivedTime", "EventType" ]
                 }
         }
+        if "HAProxy" in [tags] {
+                mutate {
+                        remove_field => [ "accept_date", "haproxy_hour", "haproxy_milliseconds", "haproxy_minute", "haproxy_month", "haproxy_monthday", "haproxy_second", "haproxy_time", "haproxy_year", "pid", "program", "syslog_server" ]
+                }
+        }
         if [type] == "iis" {
                 mutate {
                         remove_field => [ "clientip", "host", "hostname", "logtime" ]
@@ -930,22 +935,23 @@ tee -a /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.j
                "location" : { "type" : "geo_point" }
              }
          },
-        "actconn": { "type": "integer", "index": "not_analyzed" },
-        "backend_queue": { "type": "integer", "index": "not_analyzed" },
-        "beconn": { "type": "integer", "index": "not_analyzed" },
+        "actconn": { "type": "long", "index": "not_analyzed" },
+        "backend_queue": { "type": "long", "index": "not_analyzed" },
+        "beconn": { "type": "long", "index": "not_analyzed" },
         "bytes": { "type": "long", "index": "not_analyzed" },
         "bytes_read": { "type": "long", "index": "not_analyzed" },
         "datastore_latency_from": { "type": "long", "index": "not_analyzed" },
         "datastore_latency_to": { "type": "long", "index": "not_analyzed" },
-        "feconn": { "type": "integer", "index": "not_analyzed" },
+        "feconn": { "type": "long", "index": "not_analyzed" },
         "response_time": { "type": "long", "index": "not_analyzed" },
-        "srv_queue": { "type": "integer", "index": "not_analyzed" },
-        "srvconn": { "type": "integer", "index": "not_analyzed" },
-        "time_backend_connect": { "type": "integer", "index": "not_analyzed" },
+        "retries": { "type": "long", "index": "not_analyzed" },
+        "srv_queue": { "type": "long", "index": "not_analyzed" },
+        "srvconn": { "type": "long", "index": "not_analyzed" },
+        "time_backend_connect": { "type": "long", "index": "not_analyzed" },
         "time_backend_response": { "type": "long", "index": "not_analyzed" },
         "time_duration": { "type": "long", "index": "not_analyzed" },
-        "time_queue": { "type": "integer", "index": "not_analyzed" },
-        "time_request": { "type": "integer", "index": "not_analyzed" }
+        "time_queue": { "type": "long", "index": "not_analyzed" },
+        "time_request": { "type": "long", "index": "not_analyzed" }
        }
     }
   }
