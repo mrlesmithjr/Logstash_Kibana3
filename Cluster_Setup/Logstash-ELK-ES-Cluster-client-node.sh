@@ -891,30 +891,35 @@ filter {
                 }
         }
 }
+
+#### Multicast discovery mode ####
 # Send output to the ES cluster logstash-cluster using a predefined template
-# The settings can be used for using multicast ES nodes
-# When changing to unicast you need to comment out the following section and 
-#output {
-#        elasticsearch {
-#                cluster => "logstash-cluster"
-#                flush_size => 1
-#                manage_template => true
-#                template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
-#        }
-#}
-# Send output to the ES cluster logstash-cluster using a predefined template
-# The settings below will be used when you change to unicast mode for all ES nodes
+# The following settings will be used during the initial setup which will be used for using multicast ES nodes
+# When changing to unicast discovery mode you need to comment out the following section and configure the unicast discovery mode in the next section
 output {
         elasticsearch {
                 cluster => "logstash-cluster"
-                host => "logstash"
-                port => "9300"
-                protocol => "node"
-                flush_size => "1"
+                flush_size => 1
                 manage_template => true
                 template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
         }
 }
+
+#### Unicast discovery mode ####
+# Send output to the ES cluster logstash-cluster using a predefined template
+# The settings below will be used when you change to unicast discovery mode for all ES nodes
+# Make sure to comment out the above multicast discovery mode section
+#output {
+#        elasticsearch {
+#                cluster => "logstash-cluster"
+#                host => "logstash"
+#                port => "9300"
+#                protocol => "node"
+#                flush_size => "1"
+#                manage_template => true
+#                template => "/opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json"
+#        }
+#}
 EOF
 
 # Update elasticsearch-template for logstash
