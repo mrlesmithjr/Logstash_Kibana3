@@ -147,7 +147,7 @@ done
 for server in $(cat elk-nodes.txt); do
 	echo "Saving Firewall rules on: " $server
 	echo "Saving Firewall rules"
-	ssh elkadmin@$server "sudo iptables-save -c > /etc/iptables.rules"
+	ssh elkadmin@$server "sudo sh -c "iptables-save > /etc/iptables.rules""
 	echo "Setting IPTables save|restore in /etc/network/interfaces to start on boot"
 	ssh elkadmin@$server "sudo cp /etc/network/interfaces /etc/network/interfaces.$datestamp"
 	ssh elkadmin@$server "sudo sed -i -e 's|^pre-up iptables-restore < /etc/iptables.rules||' /etc/network/interfaces"
