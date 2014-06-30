@@ -5,9 +5,19 @@ function pause(){
    read -p "$*"
 }
 
-# Create/Modify firewall rules on logstash nodes
+# Create/Modify firewall rules on elk nodes
+# These rules will force users to go directly through the HAProxy LB VIP and not allow users to connect directly to any of the ELK nodes for ES or Kibana
+# In order to use this script you must allow ssh key based login to your ELK nodes as root
+# You can add additional TCP/UDP ports required for your setup in the respective txt files
+# You will also need to modify the txt files which include your actual ELK nodes in the respective txt file
+# Add any additional node that you want to grant access to your ELK nodes into the admin_stations.txt file
+# Keep HAProxy nodes separate as they need to be availabe from any node on your network but you may also want to tighten these down if requirements dictate that
+# Default Non-ELK related rules are any ports you would like to allow by default...Generally this will only be SSH TCP/22. So these rules will not be related to the ELK stack.
+# ELK related rules are the ports required for any of the ELK components to communicate all of the way up to the HAProxy LB's.
+# ELK related rules would be assigned as unrestricted - Allowed from any node on your network and restricted - Only allowed from the nodes within your ELK stack
+#
 
-for server in $(cat logstash_nodes.txt); do
+for server in $(cat elk-nodes.txt); do
         # Flush existing rules and chains
         echo "Flushing existing Firewall rules on: " $server
         ssh root@$server "iptables -P INPUT ACCEPT"
@@ -44,12 +54,12 @@ for server in $(cat logstash_nodes.txt); do
 
         # Setup default rules not related to ELK
         echo "Applying all default non-ELK related ports"
-        for defaultportallow in $(cat firewall_default_tcp_ports_allowed_logstash-nodes.txt); do
+        for defaultportallow in $(cat firewall_default_tcp_ports_allowed.txt); do
                 echo "Allowing TCP port: " $defaultportallow "On Server: " $server
                 ssh root@$server "iptables -A INPUT -p tcp --dport $defaultportallow -j DEFAULT-Allowed"
                 ssh root@$server "iptables -A DEFAULT-Allowed -p tcp --dport $defaultportallow -m conntrack --ctstate NEW -j LOGGING-Allowed"
         done
-        for defaultportallow in $(cat firewall_default_udp_ports_allowed_logstash-nodes.txt); do
+        for defaultportallow in $(cat firewall_default_udp_ports_allowed.txt); do
                 echo "Allowing UDP port: " $defaultportallow "On Server: " $server
                 ssh root@$server "iptables -A INPUT -p udp --dport $defaultportallow -j DEFAULT-Allowed"
                 ssh root@$server "iptables -A DEFAULT-Allowed -p udp --dport $defaultportallow -m conntrack --ctstate NEW -j LOGGING-Allowed"
@@ -57,15 +67,15 @@ for server in $(cat logstash_nodes.txt); do
 done
 
 # Apply non resricted ELK Ports
-for server in $(cat logstash_nodes.txt); do
+for server in $(cat elk-nodes.txt); do
         echo "Applying all ELK unrestricted firewall rules on: " $server
-        for portallow in $(cat firewall_unrestricted_tcp_ports_allowed_logstash-nodes.txt); do
+        for portallow in $(cat firewall_unrestricted_tcp_ports_allowed.txt); do
                 echo "Allowing TCP port: " $portallow "On server: " $server
                 # Setup first needed rule to send rule to chain for each protocol
                 ssh root@$server "iptables -A INPUT -p tcp --dport $portallow -j ELK-RELATED-Allowed"
                 ssh root@$server "iptables -A ELK-RELATED-Allowed -p tcp --dport $portallow -m conntrack --ctstate NEW -j LOGGING-Allowed"
         done
-        for portallow in $(cat firewall_unrestricted_udp_ports_allowed_logstash-nodes.txt); do
+        for portallow in $(cat firewall_unrestricted_udp_ports_allowed.txt); do
                 echo "Allowing UDP port: " $portallow "On server: " $server
                 # Setup first needed rule to send rule to chain for each protocol
                 ssh root@$server "iptables -A INPUT -p udp --dport $portallow -j ELK-RELATED-Allowed"
@@ -74,19 +84,19 @@ for server in $(cat logstash_nodes.txt); do
 done
 
 # Apply allow ELK related firewall rules
-for server in $(cat logstash_nodes.txt); do
+for server in $(cat elk-nodes.txt); do
         # Apply TCP Ports
         echo "Applying all ELK related firewall rules on: " $server
-        for portallow in $(cat firewall_restricted_tcp_ports_allowed_logstash-nodes.txt); do
+        for portallow in $(cat firewall_restricted_tcp_ports_allowed.txt); do
                 # allowing other logstash nodes access
                 ssh root@$server "iptables -A INPUT -p tcp --dport $portallow -j ELK-RELATED-Allowed"
-                for node in $(cat logstash_nodes.txt); do
-                        echo "Allowing TCP port: " $portallow "From logstash node: " $node "On server: " $server
+                for node in $(cat elk-nodes.txt); do
+                        echo "Allowing TCP port: " $portallow "From ELK node: " $node "On server: " $server
                         # Setup first needed rule to send rule to chain for each protocol
                         ssh root@$server "iptables -A ELK-RELATED-Allowed -p tcp --dport $portallow -s $node -m conntrack --ctstate NEW -j LOGGING-Allowed"
                 done
                 # allowing haproxy nodes access
-                for node in $(cat haproxy_nodes.txt); do
+                for node in $(cat elk-haproxy-nodes.txt); do
                         echo "Allowing TCP port: " $portallow "From haproxy node: " $node "On server: " $server
                         ssh root@$server "iptables -A ELK-RELATED-Allowed -p tcp --dport $portallow -s $node -m conntrack --ctstate NEW -j LOGGING-Allowed"
                 done
@@ -97,16 +107,16 @@ for server in $(cat logstash_nodes.txt); do
                 done
         done
         # Apply UDP Ports
-        for portallow in $(cat firewall_restricted_udp_ports_allowed_logstash-nodes.txt); do
-                # allowing other logstash nodes access
+        for portallow in $(cat firewall_restricted_udp_ports_allowed.txt); do
+                # allowing other ELK nodes access
                 ssh root@$server "iptables -A INPUT -p udp --dport $portallow -j ELK-RELATED-Allowed"
-                for node in $(cat logstash_nodes.txt); do
-                        echo "Allowing UDP port: " $portallow "From logstash node: " $node "On server: " $server
+                for node in $(cat elk-nodes.txt); do
+                        echo "Allowing UDP port: " $portallow "From ELK node: " $node "On server: " $server
                         # Setup first needed rule to send rule to chain for each protocol
                         ssh root@$server "iptables -A ELK-RELATED-Allowed -p udp --dport $portallow -s $node -m conntrack --ctstate NEW -j LOGGING-Allowed"
                 done
                 # allowing haproxy nodes access
-                for node in $(cat haproxy_nodes.txt); do
+                for node in $(cat elk-haproxy-nodes.txt); do
                         echo "Allowing UDP port: " $portallow "From haproxy node: " $node "On server: " $server
                         ssh root@$server "iptables -A ELK-RELATED-Allowed -p udp --dport $portallow -s $node -m conntrack --ctstate NEW -j LOGGING-Allowed"
                 done
@@ -119,14 +129,14 @@ for server in $(cat logstash_nodes.txt); do
 done
 
 # Apply deny firewall rules for everything else other than allowed above
-for server in $(cat logstash_nodes.txt); do
+for server in $(cat elk-nodes.txt); do
         echo "Applying Firewall drop rules on: " $server
         ssh root@$server "iptables -A INPUT -j LOGGING-Dropped"
         ssh root@$server "iptables -A FORWARD -j LOGGING-Dropped"
 done
 
 # Apply Default Filtering Policy
-for server in $(cat logstash_nodes.txt); do
+for server in $(cat elk-nodes.txt); do
         echo "Setting Default Firewall policy to drop on: " $server
         ssh root@$server "iptables -P INPUT DROP"
         ssh root@$server "iptables -P FORWARD DROP"
@@ -134,6 +144,6 @@ for server in $(cat logstash_nodes.txt); do
 done
 
 # Save Firewall rules
-for server in $(cat logstash_nodes.txt); do
+for server in $(cat elk-nodes.txt); do
         echo "Saving Firewall rules on: " $server
 done
