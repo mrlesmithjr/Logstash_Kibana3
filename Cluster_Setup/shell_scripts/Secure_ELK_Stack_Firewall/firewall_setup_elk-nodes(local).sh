@@ -135,7 +135,7 @@ read -p "$*"
 
 # Save Firewall rules
 	echo "Saving Firewall rules"
-	sudo iptables-save -c > /etc/iptables.rules
+	sudo sh -c "iptables-save > /etc/iptables.rules"
 	echo "Setting IPTables save|restore in /etc/network/interfaces to start on boot"
 	sudo cp /etc/network/interfaces /etc/network/interfaces.$datestamp
 	sudo sed -i -e 's|^pre-up iptables-restore < /etc/iptables.rules||' /etc/network/interfaces
