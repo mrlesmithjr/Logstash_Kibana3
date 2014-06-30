@@ -1,5 +1,7 @@
 elk-broker-1
 elk-broker-2
+elk-es-1
+elk-es-2
 elk-processor-1
 elk-processor-2
 elk-es-1
