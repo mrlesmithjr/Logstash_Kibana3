@@ -240,8 +240,8 @@ listen elasticsearch-TCP-9200 $haproxyvip:9200
         #balance roundrobin - Each server is used in turns, according to their weights.
         #balance source - Source IP hashed and divided by total weight of servers designates which server will receive the request
         balance roundrobin
-        server $logstashnode1 $logstashnode1:9200 check
-        server $logstashnode2 $logstashnode2:9200 check
+        server $elkprocessor1 $elkprocessor1:9200 check
+        server $elkprocessor2 $elkprocessor2:9200 check
 
 listen elasticsearch-TCP-9300 $haproxyvip:9300
         mode tcp
