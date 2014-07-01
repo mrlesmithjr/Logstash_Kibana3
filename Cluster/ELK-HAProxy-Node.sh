@@ -291,9 +291,6 @@ EOF
 # Enable HAProxy to start
 sed -i -e 's|ENABLED=0|ENABLED=1|' /etc/default/haproxy
 
-# Start Haproxy
-wait 20 && service haproxy restart
-
 # Install Logstash
 cd /opt
 #wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
@@ -494,6 +491,9 @@ tee -a /etc/logrotate.d/logstash <<EOF
         create 644 root root
 }
 EOF
+
+# Start Haproxy
+wait 20 && service haproxy restart
 
 # All Done
 echo "Installation has completed!!"
