@@ -37,7 +37,7 @@ apt-get -qq update
 
 ############################### Logstash - Elasticsearch cluster Setup ##################################
 # Install Pre-Reqs
-apt-get install -y --force-yes git curl software-properties-common
+apt-get install -y --force-yes git curl software-properties-common ntp
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
 echo "Installing Oracle Java 7"
