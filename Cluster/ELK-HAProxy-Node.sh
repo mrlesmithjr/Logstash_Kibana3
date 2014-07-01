@@ -43,7 +43,7 @@ apt-get -qq update
 echo "net.ipv4.ip_nonlocal_bind=1" >> /etc/sysctl.conf
 
 # Install Pre-Reqs
-apt-get install -y --force-yes git curl nginx software-properties-common keepalived haproxy
+apt-get install -y --force-yes git curl nginx software-properties-common keepalived haproxy ntp
 
 # Remove nginx default site
 rm /etc/nginx/sites-enabled/default
