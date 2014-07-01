@@ -136,7 +136,7 @@ EOF
 
 # All Done
 echo "Installation has completed!!"
-echo "Now continue on and setup your ELK Frontend Broker nodes"
+echo "Now continue on and setup your ELK-Broker nodes"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
 echo "${yellow}Enjoy!!!${NC}"
