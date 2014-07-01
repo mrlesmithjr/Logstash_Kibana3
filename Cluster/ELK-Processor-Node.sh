@@ -144,7 +144,7 @@ service elasticsearch restart
 
 ##################### Logstash Front-End Setup ###########################################
 # Install Pre-Reqs
-apt-get install -y --force-yes ruby ruby1.9.1-dev libcurl4-openssl-dev nginx
+apt-get install -y --force-yes ruby ruby1.9.1-dev libcurl4-openssl-dev
 
 # Install Redis-Server
 #apt-get -y install redis-server
@@ -925,7 +925,7 @@ output {
 #output {
 #        elasticsearch {
 #                cluster => "logstash-cluster"
-#                host => "$logstashinfo"
+#                host => "replacelogstashinfo"
 #                port => "9300"
 #                protocol => "node"
 #                flush_size => "1"
@@ -935,6 +935,8 @@ output {
 #        }
 #}
 EOF
+
+sed -i -e 's|host => "replacelogstashinfo"|host => "'$logstashinfo'"|' /etc/logstash/logstash.conf
 
 # Update elasticsearch-template for logstash
 mv /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json.orig
