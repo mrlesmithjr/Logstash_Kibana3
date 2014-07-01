@@ -292,7 +292,7 @@ EOF
 sed -i -e 's|ENABLED=0|ENABLED=1|' /etc/default/haproxy
 
 # Start Haproxy
-service haproxy start
+wait 20 && service haproxy restart
 
 # Install Logstash
 cd /opt
