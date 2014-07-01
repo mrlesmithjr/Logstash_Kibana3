@@ -272,20 +272,20 @@ listen kibana-http $haproxyvip:80
         server $elkprocessor1 $elkprocessor1:80 check cookie L1
         server $elkprocessor2 $elkprocessor2:80 check cookie L2
 
-listen kibana-https $haproxyvip:8443
-        mode http
-        stats enable
-        stats auth admin:password # Change this to your own username and password!
-        #balance leastconn - The server with the lowest number of connections receives the connection
-        #balance roundrobin - Each server is used in turns, according to their weights.
-        #balance source - Source IP hashed and divided by total weight of servers designates which server will receive the request
-        balance source
-        #option httpchk
-        option httpclose
-        option forwardfor except $IPADDY #10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
-        cookie JSESSIONID prefix indirect nocache
-        server $elkprocessor1 $elkprocessor1:8080 check cookie L1
-        server $elkprocessor2 $elkprocessor2:8080 check cookie L2
+#listen kibana-https $haproxyvip:8443
+#        mode http
+#        stats enable
+#        stats auth admin:password # Change this to your own username and password!
+#        #balance leastconn - The server with the lowest number of connections receives the connection
+#        #balance roundrobin - Each server is used in turns, according to their weights.
+#        #balance source - Source IP hashed and divided by total weight of servers designates which server will receive the request
+#        balance source
+#        #option httpchk
+#        option httpclose
+#        option forwardfor except $IPADDY #10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
+#        cookie JSESSIONID prefix indirect nocache
+#        server $elkprocessor1 $elkprocessor1:8080 check cookie L1
+#        server $elkprocessor2 $elkprocessor2:8080 check cookie L2
 EOF
 
 # Enable HAProxy to start
