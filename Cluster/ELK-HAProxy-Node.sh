@@ -39,6 +39,9 @@ echo "Disabling CD Sources and Updating Apt Packages and Installing Pre-Reqs"
 sed -i -e 's|deb cdrom:|# deb cdrom:|' /etc/apt/sources.list
 apt-get -qq update
 
+# Allow VIPS to come up on both nodes
+echo "net.ipv4.ip_nonlocal_bind=1" >> /etc/sysctl.conf
+
 # Install Pre-Reqs
 apt-get install -y --force-yes git curl nginx software-properties-common keepalived haproxy
 
