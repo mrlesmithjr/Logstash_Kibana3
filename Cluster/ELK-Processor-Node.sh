@@ -37,7 +37,7 @@ apt-get -qq update
 
 ############################### Logstash - Elasticsearch cluster Setup ##################################
 # Install Pre-Reqs
-apt-get install -y --force-yes git curl software-properties-common
+apt-get install -y --force-yes git curl software-properties-common nginx
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
 echo "Installing Oracle Java 7"
@@ -925,7 +925,7 @@ output {
 #output {
 #        elasticsearch {
 #                cluster => "logstash-cluster"
-#                host => "replacelogstashinfo"
+#                host => $logstashinfo
 #                port => "9300"
 #                protocol => "node"
 #                flush_size => "1"
@@ -935,8 +935,6 @@ output {
 #        }
 #}
 EOF
-
-sed -i -e 's|host => "replacelogstashinfo"|host => "'$logstashinfo'"|' /etc/logstash/logstash.conf
 
 # Update elasticsearch-template for logstash
 mv /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.json.orig
@@ -1024,7 +1022,7 @@ mv /usr/share/nginx/html/kibana/app/dashboards/default.json /usr/share/nginx/htm
 mv /usr/share/nginx/html/kibana/app/dashboards/logstash.json /usr/share/nginx/html/kibana/app/dashboards/default.json
 
 # Edit /usr/share/nginx/html/kibana/config.js
-sed -i -e 's|elasticsearch: "http://"+window.location.hostname+":9200",|elasticsearch: "http://$logstashinfo:9200",|' /usr/share/nginx/html/kibana/config.js
+sed -i -e 's|elasticsearch: "http://"+window.location.hostname+":9200",|elasticsearch: "http://'$logstashinfo':9200",|' /usr/share/nginx/html/kibana/config.js
 
 # Logrotate job for logstash
 tee -a /etc/logrotate.d/logstash <<EOF
