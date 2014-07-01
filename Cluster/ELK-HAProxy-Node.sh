@@ -493,7 +493,7 @@ tee -a /etc/logrotate.d/logstash <<EOF
 EOF
 
 # Start Haproxy
-wait 20 && service haproxy restart
+service haproxy restart
 
 # All Done
 echo "Installation has completed!!"
