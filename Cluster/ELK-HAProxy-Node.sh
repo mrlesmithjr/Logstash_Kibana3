@@ -126,7 +126,9 @@ mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.orig
 # create new /etc/haproxy/haproxy.cfg file
 tee -a /etc/haproxy/haproxy.cfg <<EOF
 global
-        log $haproxyhostname    local0 #Change logstash to your naming
+#        log $haproxyhostname    local0 #Change logstash to your naming
+        log /dev/log    local0
+        log /dev/log    local1 notice
         log-send-hostname
         chroot /var/lib/haproxy
         user haproxy
