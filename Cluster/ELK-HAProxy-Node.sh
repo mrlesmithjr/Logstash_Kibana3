@@ -387,7 +387,7 @@ update-rc.d logstash defaults 96 04
 echo "Setting up rsyslog to receive remote syslog on UDP/514"
 sed -i -e 's|#$ModLoad imudp|$ModLoad imudp|' /etc/rsyslog.conf
 sed -i -e 's|#$UDPServerRun 514|$UDPServerRun 514|' /etc/rsyslog.conf
-echo '*.* @@$logstashinfo' | tee -a  /etc/rsyslog.d/50-default.conf
+echo '*.* @@'$logstashinfo'' | tee -a  /etc/rsyslog.d/50-default.conf
 service rsyslog restart
 
 # Create Logstash configuration file
