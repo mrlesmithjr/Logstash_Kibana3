@@ -263,7 +263,7 @@ listen kibana-http $haproxyvip:80
         #balance source - Source IP hashed and divided by total weight of servers designates which server will receive the request
         balance source
         option httpclose
-        option forwardfor # except 10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
+        option forwardfor except $IPADDY # 10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
         cookie JSESSIONID prefix indirect nocache
         server $elkprocessor1 $elkprocessor1:80 check cookie L1
         server $elkprocessor2 $elkprocessor2:80 check cookie L2
@@ -278,7 +278,7 @@ listen kibana-https $haproxyvip:8443
         balance source
         #option httpchk
         option httpclose
-        option forwardfor # except 10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
+        option forwardfor except $IPADDY #10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
         cookie JSESSIONID prefix indirect nocache
         server $elkprocessor1 $elkprocessor1:8080 check cookie L1
         server $elkprocessor2 $elkprocessor2:8080 check cookie L2
