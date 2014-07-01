@@ -209,7 +209,7 @@ input {
 }
 output {
   redis {
-  host => "$logstashinfo"
+  host => $logstashinfo
   data_type => "list"
   key => "logstash"
   }
@@ -299,7 +299,7 @@ EOF
 
 # All Done
 echo "Installation has completed!!"
-echo "Now continue on and setup your ELK-Processor nodes"
+echo "Now continue on and setup your ELK-HAProxy nodes"
 #echo -e "To connect to cluster connect to ${red}http://$logstashinfo/kibana${NC}"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
