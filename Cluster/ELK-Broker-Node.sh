@@ -56,6 +56,16 @@ apt-get -y install redis-server
 sed -i -e 's|bind 127.0.0.1|bind 0.0.0.0|' /etc/redis/redis.conf
 service redis-server restart
 
+# Setup rsyslog to forward syslog to logstash
+echo "Enter the VIP Hostname being used in your setup"
+echo "This will be the same as what is intended to be used to setup HAProxy VIP Info"
+echo "Example....logstash"
+echo "This will be used to setup rsyslog to forward syslog events for this node to logstash"
+echo -n "Enter VIP Info: "
+read logstashinfo
+echo '*.* @@'$logstashinfo'' | tee -a  /etc/rsyslog.d/50-default.conf
+service rsyslog restart
+
 # Install Logstash
 cd /opt
 #wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
