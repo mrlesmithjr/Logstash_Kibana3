@@ -45,7 +45,8 @@ echo "net.ipv4.ip_nonlocal_bind=1" >> /etc/sysctl.conf
 # Install Pre-Reqs
 apt-get install -y --force-yes git curl nginx software-properties-common keepalived haproxy ntp
 
-# Remove nginx default site
+# Remove nginx default site to keep from a conflict with HAProxy
+# Nginx is installed in case you want to put a proxy in front of ES
 rm /etc/nginx/sites-enabled/default
 service nginx restart
 
@@ -66,7 +67,7 @@ echo "Enter your HAProxy VIP IP address to use for setup"
 echo "example 10.0.101.60"
 echo -n "Enter HAProxy VIP: "
 read haproxyvip
-echo "You entered ${red}$haproxyvip%{NC}"
+echo "You entered ${red}$haproxyvipZ${NC}"
 echo "Enter your HAProxy VIP hostname to use for setup"
 echo "example logstash"
 echo -n "Enter HAProxy VIP hostname: "
