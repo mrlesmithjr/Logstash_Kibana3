@@ -283,53 +283,16 @@ input {
                 sincedb_path => "/var/log/.nginxerrorsincedb"
         }
 }
+# Modify threads below to match the number of CPUs in your node
 input {
         redis {
-                host => "$logstashinfo"
+                host => $logstashinfo
                 data_type => "list"
                 key => "logstash"
                 codec => "json"
                 threads => "2"
         }
 }
-#input {
-#        tcp {
-#                type => "syslog"
-#                port => "514"
-#        }
-#}
-#input {
-#        tcp {
-#                type => "VMware"
-#                port => "1514"
-#        }
-#}
-#input {
-#        tcp {
-#                type => "vCenter"
-#                port => "1515"
-#        }
-#}
-#input {
-#        tcp {
-#                type => "Netscaler"
-#                port => "1517"
-#        }
-#}
-#input {
-#        tcp {
-#                type => "eventlog"
-#                port => "3515"
-#                format => "json"
-#        }
-#}
-#input {
-#        tcp {
-#                type => "iis"
-#                port => "3525"
-#                codec => "json_lines"
-#        }
-#}
 filter {
         if [type] == "syslog" {
                 dns {
@@ -468,6 +431,9 @@ filter {
 filter {
         if "syslog" in [tags] {
                 if [syslog_program] == "haproxy" {
+                        mutate {
+                                remove_field => [ "syslog_timestamp" ]
+                        }
                         grok {
                                 break_on_match => false
                                 match => [
@@ -851,6 +817,11 @@ filter {
                         resolve => [ "source_host_ip" ]
                         action => "replace"
                 }
+                if [source_host_ip] == "127.0.1.1" {
+                        mutate {
+                                update => [ "source_host_ip", "" ]
+                        }
+                }
                 mutate {
                         rename => [ "source_host_ip", "@source_host_ip" ]
                 }
@@ -881,7 +852,7 @@ filter {
         }
         if [type] =~ "nginx" {
                 mutate {
-                        remove_field => [ "clientip", "host" ]
+                        remove_field => [ "apache_vhost", "clientip", "host" ]
                 }
         }
         if "Netscaler" in [tags] {
