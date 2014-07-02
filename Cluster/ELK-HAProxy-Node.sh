@@ -505,7 +505,7 @@ service haproxy restart
 
 # All Done
 echo "Installation has completed!!"
-echo "Now continue on and setup your ELK-Processor nodes"
+echo "Now continue on and setup your ELK-ES nodes"
 echo "${yellow}EveryThingShouldBeVirtual.com${NC}"
 echo "${yellow}@mrlesmithjr${NC}"
 echo "${yellow}Enjoy!!!${NC}"
