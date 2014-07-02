@@ -297,6 +297,15 @@ EOF
 # Enable HAProxy to start
 sed -i -e 's|ENABLED=0|ENABLED=1|' /etc/default/haproxy
 
+# Setting up rsyslog to receive remote syslog on UDP/514 and then send back out to TCP/514 to the logstash cluster
+echo "Setting up rsyslog to receive remote syslog on UDP/514"
+sed -i -e 's|#$ModLoad imudp|$ModLoad imudp|' /etc/rsyslog.conf
+sed -i -e 's|#$UDPServerRun 514|$UDPServerRun 514|' /etc/rsyslog.conf
+
+# Setup rsyslog to forward syslog to logstash
+echo '*.* @@'$haproxyhostname'' | tee -a  /etc/rsyslog.d/50-default.conf
+service rsyslog restart
+
 # Install Logstash
 cd /opt
 #wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
@@ -383,13 +392,6 @@ chmod +x /etc/init.d/logstash
 
 # Enable logstash start on bootup
 update-rc.d logstash defaults 96 04
-
-# Setting up rsyslog to receive remote syslog on UDP/514 and then send back out to TCP/514 to the logstash cluster
-echo "Setting up rsyslog to receive remote syslog on UDP/514"
-sed -i -e 's|#$ModLoad imudp|$ModLoad imudp|' /etc/rsyslog.conf
-sed -i -e 's|#$UDPServerRun 514|$UDPServerRun 514|' /etc/rsyslog.conf
-echo '*.* @@'$logstashinfo'' | tee -a  /etc/rsyslog.d/50-default.conf
-service rsyslog restart
 
 # Create Logstash configuration file
 mkdir /etc/logstash
