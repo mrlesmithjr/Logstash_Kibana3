@@ -948,6 +948,7 @@ tee -a /opt/logstash/lib/logstash/outputs/elasticsearch/elasticsearch-template.j
         "datastore_latency_from": { "type": "long", "index": "not_analyzed" },
         "datastore_latency_to": { "type": "long", "index": "not_analyzed" },
         "feconn": { "type": "long", "index": "not_analyzed" },
+        "msg_size": { "type": "long", "index": "not_analyzed" },
         "response_time": { "type": "long", "index": "not_analyzed" },
         "retries": { "type": "long", "index": "not_analyzed" },
         "srv_queue": { "type": "long", "index": "not_analyzed" },
