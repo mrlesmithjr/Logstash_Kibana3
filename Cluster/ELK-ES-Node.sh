@@ -46,6 +46,16 @@ apt-get install -y --force-yes git curl software-properties-common ntp
  echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections
  apt-get install -y oracle-java7-installer oracle-java7-set-default
 
+# Setup rsyslog to forward syslog to logstash
+echo "Enter the VIP Hostname being used in your setup"
+echo "This will be the same as what is intended to be used to setup HAProxy VIP Info"
+echo "Example....logstash"
+echo "This will be used to setup rsyslog to forward syslog events for this node to logstash"
+echo -n "Enter VIP Info: "
+read logstashinfo
+echo '*.* @@'$logstashinfo'' | tee -a  /etc/rsyslog.d/50-default.conf
+service rsyslog restart
+
 # Install Elasticsearch
 cd /opt
 #wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
