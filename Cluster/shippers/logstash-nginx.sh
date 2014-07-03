@@ -3,7 +3,7 @@
 #Provided by @mrlesmithjr
 #EveryThingShouldBeVirtual.com
 
-# This script sets up logstash as a shipper for apache sending to redis on backend logstash processors
+# This script sets up logstash as a shipper for nginx sending to redis on backend logstash processors
 
 set -e
 # Setup logging
