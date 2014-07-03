@@ -37,7 +37,7 @@ apt-get -qq update
 
 ############################### Logstash - Elasticsearch cluster Setup ##################################
 # Install Pre-Reqs
-apt-get install -y --force-yes git curl software-properties-common ntp
+apt-get install -y --force-yes git curl software-properties-common ntp nginx
 
 # Install Oracle Java 7 **NOT Used - Installing openjdk-7-jre above
 echo "Installing Oracle Java 7"
@@ -307,6 +307,56 @@ tee -a /etc/logrotate.d/logstash <<EOF
         create 644 root root
 }
 EOF
+
+# Install and configure Kibana3 frontend
+cd /usr/share/nginx/html
+wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
+tar zxvf kibana-*
+rm kibana-*.tar.gz
+mv kibana-* kibana
+chown -R www-data:www-data /usr/share/nginx/html/kibana
+
+# Making the logstash dashboard the default
+mv /usr/share/nginx/html/kibana/app/dashboards/default.json /usr/share/nginx/html/kibana/app/dashboards/default.json.orig
+mv /usr/share/nginx/html/kibana/app/dashboards/logstash.json /usr/share/nginx/html/kibana/app/dashboards/default.json
+
+# Edit /usr/share/nginx/html/kibana/config.js
+sed -i -e 's|elasticsearch: "http://"+window.location.hostname+":9200",|elasticsearch: "http://'$logstashinfo':9200",|' /usr/share/nginx/html/kibana/config.js
+
+# Change nginx default website to nginx-logstash - prep for securing install
+# Create nginx-logstash website for nginx
+tee -a /etc/nginx/sites-available/nginx-logstash <<EOF
+#
+# Nginx proxy for Elasticsearch + Kibana
+#
+# In this setup, we are password protecting the saving of dashboards. You may
+# wish to extend the password protection to all paths.
+#
+# Even though these paths are being called as the result of an ajax request, the
+# browser will prompt for a username/password on the first request
+#
+# If you use this, you'll want to point config.js at http://FQDN:80/ instead of
+# http://FQDN:9200
+#
+server {
+  listen                *:8080 ;
+
+  server_name           $yourhostname;
+  access_log            /var/log/nginx/access.log;
+
+  location / {
+    root  /usr/share/nginx/html/;
+    index  index.html  index.htm;
+  }
+}
+EOF
+
+# Change nginx default website to new logstash-nginx
+rm /etc/nginx/sites-enabled/default
+ln -s /etc/nginx/sites-available/nginx-logstash /etc/nginx/sites-enabled/nginx-logstash
+
+# Restart nginx
+service nginx restart
 
 # All Done
 echo "Installation has completed!!"
