@@ -144,14 +144,14 @@ tee -a /etc/logstash/logstash.conf <<EOF
 input {
         file {
                 path => "/var/log/nginx/access.log"
-                type => "apache-access"
+                type => "nginx-access"
                 sincedb_path => "/var/log/.nginxaccesssincedb"
         }
 }
 input {
         file {
                 path => "/var/log/nginx/error.log"
-                type => "apache-error"
+                type => "nginx-error"
                 sincedb_path => "/var/log/.nginxerrorsincedb"
         }
 }
