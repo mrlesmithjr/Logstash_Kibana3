@@ -275,8 +275,8 @@ listen kibana-http $haproxyvip:80
         option httpclose
         option forwardfor except $IPADDY # 10.0.101.61 # Change this to 10.0.101.62 (Or IP of second node) when setting up second node
         cookie JSESSIONID prefix indirect nocache
-        server $elkprocessor1 $elkprocessor1:8080 check cookie L1
-        server $elkprocessor2 $elkprocessor2:8080 check cookie L2
+        server $elkbroker1 $elkbroker1:8080 check cookie L1
+        server $elkbroker2 $elkbroker2:8080 check cookie L2
 
 #listen kibana-https $haproxyvip:8443
 #        mode http
