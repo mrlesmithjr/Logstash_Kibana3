@@ -1012,7 +1012,7 @@ tee -a /etc/nginx/sites-available/nginx-logstash <<EOF
 # http://FQDN:9200
 #
 server {
-  listen                *:80 ;
+  listen                *:8080 ;
 
   server_name           $yourhostname;
   access_log            /var/log/nginx/access.log;
