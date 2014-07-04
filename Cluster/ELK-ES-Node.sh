@@ -114,18 +114,18 @@ service elasticsearch restart
 apt-get -y install python-pip
 pip install elasticsearch-curator
 
-# Create /etc/cron.daily/elasticsearch_curator Cron Job
+# Create /etc/cron.daily/elasticsearch_curator Cron Job and send output to logstash tagged as curator
 tee -a /etc/cron.daily/elasticsearch_curator <<EOF
 #!/bin/sh
-/usr/local/bin/curator --host 127.0.0.1 delete --older-than 90
-/usr/local/bin/curator --host 127.0.0.1 close --older-than 30
-/usr/local/bin/curator --host 127.0.0.1 bloom --older-than 2
-/usr/local/bin/curator --host 127.0.0.1 optimize --older-than 2
+curator delete --older-than 90 2>&1 | nc logstash 28778
+curator close --older-than 30 2>&1 | nc logstash 28778
+curator bloom --older-than 2 2>&1 | nc logstash 28778
+curator optimize --older-than 2 2>&1 | nc logstash 28778
 
 # Email report
 #recipients="emailAdressToReceiveReport"
 #subject="Daily Elasticsearch Curator Job Report"
-#cat /var/log/elasticsearch_curator.log | mail -s $subject $recipients
+#cat /var/log/elasticsearch_curator.log | mail -s
 EOF
 
 # Make elasticsearch_curator executable
