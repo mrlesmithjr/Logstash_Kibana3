@@ -217,6 +217,12 @@ input {
                 codec => "json_lines"
         }
 }
+input {
+        tcp {
+                type => "curator"
+                port => "28778"
+        }
+}
 output {
   redis {
   host => $logstashinfo
