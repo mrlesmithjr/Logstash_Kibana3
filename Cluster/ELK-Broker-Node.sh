@@ -219,7 +219,7 @@ input {
 }
 input {
         tcp {
-                type => "curator"
+                type => "elasticsearch-curator"
                 port => "28778"
         }
 }
