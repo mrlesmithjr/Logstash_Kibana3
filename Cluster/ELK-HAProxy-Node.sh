@@ -263,6 +263,17 @@ listen elasticsearch-TCP-9300 $haproxyvip:9300
         balance roundrobin
         server $esnode1 $esnode1:9300 check
         server $esnode2 $esnode2:9300 check
+        
+listen elasticsearch-Curator-TCP-28778 $haproxyvip:28778
+        mode tcp
+        option tcpka
+        option tcplog
+        #balance leastconn - The server with the lowest number of connections receives the connection
+        #balance roundrobin - Each server is used in turns, according to their weights.
+        #balance source - Source IP hashed and divided by total weight of servers designates which server will receive the request
+        balance roundrobin
+        server $elkbroker1 $elkbroker1:28778 check
+        server $elkbroker2 $elkbroker2:28778 check
 
 listen kibana-http $haproxyvip:80
         mode http
