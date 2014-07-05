@@ -125,7 +125,7 @@ curator optimize --older-than 2 2>&1 | nc logstash 28778
 # Email report
 #recipients="emailAdressToReceiveReport"
 #subject="Daily Elasticsearch Curator Job Report"
-#cat /var/log/elasticsearch_curator.log | mail -s
+#cat /var/log/elasticsearch_curator.log | mail -s $subject $recipients
 EOF
 
 # Make elasticsearch_curator executable
