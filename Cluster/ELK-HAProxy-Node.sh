@@ -67,7 +67,7 @@ echo "Enter your HAProxy VIP IP address to use for setup"
 echo "example 10.0.101.60"
 echo -n "Enter HAProxy VIP: "
 read haproxyvip
-echo "You entered ${red}$haproxyvipZ${NC}"
+echo "You entered ${red}$haproxyvip${NC}"
 echo "Enter your HAProxy VIP hostname to use for setup"
 echo "example logstash"
 echo -n "Enter HAProxy VIP hostname: "
