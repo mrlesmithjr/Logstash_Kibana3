@@ -68,6 +68,7 @@ echo "node.data: true" >> /etc/elasticsearch/elasticsearch.yml
 echo "index.number_of_shards: 1" >> /etc/elasticsearch/elasticsearch.yml
 echo "index.number_of_replicas: 0" >> /etc/elasticsearch/elasticsearch.yml
 echo "bootstrap.mlockall: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "script.disable_dynamic: true" >> /etc/elasticsearch/elasticsearch.yml
 
 # Making changes to /etc/security/limits.conf to allow more open files for elasticsearch
 mv /etc/security/limits.conf /etc/security/limits.bak
