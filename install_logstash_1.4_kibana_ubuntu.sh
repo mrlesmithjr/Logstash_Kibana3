@@ -236,6 +236,12 @@ input {
         }
 }
 input {
+	udp {
+		type => "syslog"
+		port => "514"
+	}
+}
+input {
         tcp {
                 type => "VMware"
                 port => "1514"
