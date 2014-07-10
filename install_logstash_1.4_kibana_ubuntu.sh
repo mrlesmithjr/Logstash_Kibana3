@@ -57,6 +57,12 @@ cd /opt
 wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
 dpkg -i elasticsearch-1.2.1.deb
 
+# Configure rsyslog to listen on UDP/514 and redirect back to logstash TCP/514
+sed -i -e 's|#$ModLoad imudp|$ModLoad imudp|' /etc/rsyslog.conf
+sed -i -e 's|#$UDPServerRun 514|$UDPServerRun 514|' /etc/rsyslog.conf
+echo '*.* @@'localhost'' | tee -a  /etc/rsyslog.d/50-default.conf
+service rsyslog restart
+
 # Configuring Elasticsearch
 ### Below is added using install script ###
 echo "cluster.name: logstash-cluster" >> /etc/elasticsearch/elasticsearch.yml
@@ -235,12 +241,6 @@ input {
                 type => "syslog"
                 port => "514"
         }
-}
-input {
-	udp {
-		type => "syslog"
-		port => "514"
-	}
 }
 input {
         tcp {
