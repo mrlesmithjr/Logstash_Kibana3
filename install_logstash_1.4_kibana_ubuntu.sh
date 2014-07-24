@@ -81,7 +81,7 @@ mv /etc/security/limits.conf /etc/security/limits.bak
 grep -Ev "# End of file" /etc/security/limits.bak > /etc/security/limits.conf
 echo "elasticsearch soft nofile 65536" >> /etc/security/limits.conf
 echo "elasticsearch hard nofile 65536" >> /etc/security/limits.conf
-echo "elasticsearch - memlock unlimited" >> /etc/security/limits.con
+echo "elasticsearch - memlock unlimited" >> /etc/security/limits.conf
 echo "# End of file" >> /etc/security/limits.conf
 
 # Set Elasticsearch to start on boot
