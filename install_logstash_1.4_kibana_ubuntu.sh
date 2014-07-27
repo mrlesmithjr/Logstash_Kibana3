@@ -975,6 +975,9 @@ mv kibana-* kibana
 mv /usr/share/nginx/html/kibana/app/dashboards/default.json /usr/share/nginx/html/kibana/app/dashboards/default.json.orig
 mv /usr/share/nginx/html/kibana/app/dashboards/logstash.json /usr/share/nginx/html/kibana/app/dashboards/default.json
 
+# Restart NGINX
+service nginx restart
+
 # Install elasticsearch curator http://www.elasticsearch.org/blog/curator-tending-your-time-series-indices/
 apt-get -y install python-pip
 pip install elasticsearch-curator
