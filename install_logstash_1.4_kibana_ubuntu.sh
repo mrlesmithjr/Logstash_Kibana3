@@ -54,8 +54,9 @@ service redis-server restart
 cd /opt
 #wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
 #dpkg -i elasticsearch-1.1.1.deb
-wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
-dpkg -i elasticsearch-1.2.1.deb
+#wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
+wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.3.2.deb
+dpkg -i elasticsearch-1.3.2.deb
 
 # Configure rsyslog to listen on UDP/514 and redirect back to logstash TCP/514
 sed -i -e 's|#$ModLoad imudp|$ModLoad imudp|' /etc/rsyslog.conf
