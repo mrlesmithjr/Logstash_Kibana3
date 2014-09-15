@@ -1025,6 +1025,16 @@ tee -a /etc/logrotate.d/elasticsearch_curator <<EOF
 }
 EOF
 
+# Modify Elasticsearch Marvel plugin settings...Default template creates 1 replica but this install only installs one ES node so we will disable replicas
+curl -XPUT localhost:9200/_template/marvel_custom -d '
+{
+    "order" : 1,
+    "template" : ".marvel*",
+    "settings" : {
+        "number_of_replicas" : 0
+    }
+}'
+
 # All Done
 echo "Installation has completed!!"
 echo -e "Connect to ${red}http://$yourfqdn/kibana${NC} or ${red}http://$IPADDY/kibana${NC}"
