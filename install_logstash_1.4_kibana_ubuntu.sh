@@ -108,7 +108,7 @@ service elasticsearch restart
 # Install Logstash
 cd /opt
 #wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
-wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.2.tar.gz
+wget https://download.elasticsearch.org/logstash/logstash/logstash-contrib-1.4.2.tar.gz
 tar zxvf logstash-*.tar.gz
 mv logstash-1.4.*/ logstash
 /opt/logstash/bin/plugin install contrib
@@ -967,7 +967,8 @@ fi
 
 # Install and configure Kibana3 frontend
 cd /usr/share/nginx/html
-wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
+#wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
+wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.1.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
@@ -983,13 +984,19 @@ service nginx restart
 apt-get -y install python-pip
 pip install elasticsearch-curator
 
-# Create /etc/cron.daily/elasticsearch_curator Cron Job
+# Create /etc/cron.daily/elasticsearch_curator Cron Job and send output to logstash tagged as curator
 tee -a /etc/cron.daily/elasticsearch_curator <<EOF
 #!/bin/sh
-/usr/local/bin/curator --host 127.0.0.1 delete --older-than 90
-/usr/local/bin/curator --host 127.0.0.1 close --older-than 30
-/usr/local/bin/curator --host 127.0.0.1 bloom --older-than 2
-/usr/local/bin/curator --host 127.0.0.1 optimize --older-than 2
+curator delete --older-than 90 2>&1 | nc logstash 28778
+curator close --older-than 30 2>&1 | nc logstash 28778
+curator bloom --older-than 2 2>&1 | nc logstash 28778
+curator optimize --older-than 2 2>&1 | nc logstash 28778
+
+# Cleanup Marvel plugin indices
+curator delete --older-than 60 -p .marvel- 2>&1 | nc logstash 28778
+curator close --older-than 7 -p .marvel- 2>&1 | nc logstash 28778
+curator bloom --older-than 2 -p .marvel- 2>&1 | nc logstash 28778
+curator optimize --older-than 2 -p .marvel- 2>&1 | nc logstash 28778 
 
 # Email report
 #recipients="emailAdressToReceiveReport"
@@ -1000,10 +1007,9 @@ EOF
 # Make elasticsearch_curator executable
 chmod +x /etc/cron.daily/elasticsearch_curator
 
-# Create logrotate jobs to rotate logstash logs and elasticsearch_curator logs
-# Logrotate job for logstash
-tee -a /etc/logrotate.d/logstash <<EOF
-/var/log/logstash.log {
+# Logrotate job for elasticsearch_curator
+tee -a /etc/logrotate.d/elasticsearch_curator <<EOF
+/var/log/elasticsearch_curator.log {
         monthly
         rotate 12
         compress
