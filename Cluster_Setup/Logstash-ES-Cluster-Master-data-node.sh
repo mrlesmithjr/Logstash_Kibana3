@@ -50,8 +50,10 @@ apt-get install -y --force-yes git curl software-properties-common
 cd /opt
 #wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
 #dpkg -i elasticsearch-1.1.1.deb
-wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
-dpkg -i elasticsearch-1.2.1.deb
+#wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
+#dpkg -i elasticsearch-1.2.1.deb
+wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.3.4.deb
+dpkg -i elasticsearch-1.3.4.deb
 
 # Configuring Elasticsearch
 echo "### Below is added using install script ###" >> /etc/elasticsearch/elasticsearch.yml
@@ -104,13 +106,19 @@ service elasticsearch restart
 apt-get -y install python-pip
 pip install elasticsearch-curator
 
-# Create /etc/cron.daily/elasticsearch_curator Cron Job
+# Create /etc/cron.daily/elasticsearch_curator Cron Job and send output to logstash tagged as curator
 tee -a /etc/cron.daily/elasticsearch_curator <<EOF
 #!/bin/sh
-/usr/local/bin/curator --host 127.0.0.1 delete --older-than 90
-/usr/local/bin/curator --host 127.0.0.1 close --older-than 30
-/usr/local/bin/curator --host 127.0.0.1 bloom --older-than 2
-/usr/local/bin/curator --host 127.0.0.1 optimize --older-than 2
+curator delete --older-than 90 2>&1 | nc logstash 28778
+curator close --older-than 30 2>&1 | nc logstash 28778
+curator bloom --older-than 2 2>&1 | nc logstash 28778
+curator optimize --older-than 2 2>&1 | nc logstash 28778
+
+# Cleanup Marvel plugin indices
+curator delete --older-than 60 -p .marvel- 2>&1 | nc logstash 28778
+curator close --older-than 7 -p .marvel- 2>&1 | nc logstash 28778
+curator bloom --older-than 2 -p .marvel- 2>&1 | nc logstash 28778
+curator optimize --older-than 2 -p .marvel- 2>&1 | nc logstash 28778 
 
 # Email report
 #recipients="emailAdressToReceiveReport"
