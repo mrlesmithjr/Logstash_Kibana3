@@ -147,7 +147,8 @@ service redis-server restart
 
 # Install Logstash
 cd /opt
-wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
+#wget https://download.elasticsearch.org/logstash/logstash/logstash-1.4.1.tar.gz
+wget https://download.elasticsearch.org/logstash/logstash/logstash-contrib-1.4.2.tar.gz
 tar zxvf logstash-*.tar.gz
 mv logstash-1.4.1 logstash
 /opt/logstash/bin/plugin install contrib
