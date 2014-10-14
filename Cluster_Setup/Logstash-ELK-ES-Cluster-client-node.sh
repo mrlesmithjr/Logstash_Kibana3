@@ -50,8 +50,10 @@ apt-get install -y oracle-java7-installer oracle-java7-set-default
 cd /opt
 #wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
 #dpkg -i elasticsearch-1.1.1.deb
-wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
-dpkg -i elasticsearch-1.2.1.deb
+#wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.2.1.deb
+#dpkg -i elasticsearch-1.2.1.deb
+wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.3.4.deb
+dpkg -i elasticsearch-1.3.4.deb
 
 # Configuring Elasticsearch
 echo "### Below is added using install script ###" >> /etc/elasticsearch/elasticsearch.yml
@@ -998,7 +1000,8 @@ fi
 
 # Install and configure Kibana3 frontend
 cd /usr/share/nginx/html
-wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
+#wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.0.tar.gz
+wget https://download.elasticsearch.org/kibana/kibana/kibana-3.1.1.tar.gz
 tar zxvf kibana-*
 rm kibana-*.tar.gz
 mv kibana-* kibana
