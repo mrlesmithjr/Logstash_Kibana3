@@ -62,7 +62,7 @@ cat <<'EOF'
 
 name="logstash"
 logstash_bin="/opt/logstash/bin/logstash"
-logstash_conf="/etc/logstash/apache_logstash.conf"
+logstash_conf="/etc/logstash/logstash.conf"
 logstash_log="/var/log/logstash.log"
 pid_file="/var/run/$name.pid"
 patterns_path="/etc/logstash/patterns"
