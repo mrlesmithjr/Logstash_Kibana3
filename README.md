@@ -1,4 +1,7 @@
-Logstash and Kibana3 Auto Install script
+> [!CAUTION]
+> **This project is archived and no longer maintained.**
+> Archived: 2026-03-26
+> Reason: Legacy Logstash/Kibana3 scripts from ~2013; completely outdatedLogstash and Kibana3 Auto Install script
 ----------------------------------------
 
 This script is for doing an automated install of logstash and the kibana3 front end. It will also setup some tagging and cleanup for VMware ESXi hosts.
